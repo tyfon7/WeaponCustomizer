@@ -67,52 +67,20 @@ public static class EditPatches
             UpdatePositionsMethod = AccessTools.Method(___ginterface386_0.GetType(), "UpdatePositions");
             ViewporterField = AccessTools.Field(___ginterface386_0.GetType(), "_viewporter");
             var viewporter = ViewporterField.GetValue(___ginterface386_0) as CameraViewporter;
+            var originalLocalPosition = ___transform_0.localPosition;
 
             // Load the offsets
-            if (Customizations.Offsets.TryGetValue(___lootItemClass.Id, out Dictionary<string, float> offsets))
+            if (Customizations.Offsets.TryGetValue(___lootItemClass.Id, out Dictionary<string, Vector3> offsets))
             {
-                if (offsets.TryGetValue(___slot_0.FullId, out float offset))
+                if (offsets.TryGetValue(___slot_0.FullId, out Vector3 offset))
                 {
-                    Axis axis = GetAxis(___transform_0);
-                    switch (axis)
-                    {
-                        case Axis.Y:
-                            ___transform_0.localPosition = new(___transform_0.localPosition.x, offset, ___transform_0.localPosition.z);
-                            break;
-                        case Axis.Z:
-                        default:
-                            ___transform_0.localPosition = new(___transform_0.localPosition.x, ___transform_0.localPosition.y, offset);
-                            break;
-                    }
-
+                    ___transform_0.localPosition += offset;
                     UpdatePositionsMethod.Invoke(___ginterface386_0, []);
                 }
             }
 
 
-            ____boneIcon.GetOrAddComponent<DraggableBone>().Init(___transform_0, ___lootItemClass.Id, ___slot_0.FullId, viewporter, () => UpdatePositionsMethod.Invoke(___ginterface386_0, []));
-        }
-    }
-
-    enum Axis
-    {
-        Y,
-        Z
-    }
-
-    private static Axis GetAxis(Transform mod)
-    {
-        // This is just hardcoded but fine for now
-        float rotation = Mathf.RoundToInt(mod.localRotation.eulerAngles.x);
-        switch (rotation)
-        {
-            case 0:
-            case 180:
-                return Axis.Y;
-            case 90:
-            case 270:
-            default:
-                return Axis.Z;
+            ____boneIcon.GetOrAddComponent<DraggableBone>().Init(___transform_0, ___lootItemClass.Id, ___slot_0.FullId, viewporter, originalLocalPosition, () => UpdatePositionsMethod.Invoke(___ginterface386_0, []));
         }
     }
 
@@ -123,49 +91,42 @@ public static class EditPatches
         private string slotId;
         private CameraViewporter viewporter;
         private Action updatePositions;
-        private bool reversed = false;
 
-        private Axis axis;
-        private float originalValue;
-        private float localMinValue;
-        private float localMaxValue;
-        private float screenMinX;
-        private float screenMaxX;
+        private Vector3 originalLocalPosition;
+        private Vector3 minLocalPosition;
+        private Vector3 maxLocalPosition;
+        private float maxDistance;
+        private Vector2 minScreen;
+        private Vector2 maxScreen;
+        private bool reversed;
 
-        public void Init(Transform mod, string weaponId, string slotId, CameraViewporter viewporter, Action updatePositions)
+        public void Init(Transform mod, string weaponId, string slotId, CameraViewporter viewporter, Vector3 originalLocalPosition, Action updatePositions)
         {
             this.mod = mod;
             this.weaponId = weaponId;
             this.slotId = slotId;
             this.viewporter = viewporter;
             this.updatePositions = updatePositions;
+            this.originalLocalPosition = originalLocalPosition;
 
-            axis = GetAxis(mod);
-            originalValue = axis switch
-            {
-                Axis.Y => mod.localPosition.y,
-                Axis.Z => mod.localPosition.z,
-                _ => mod.localPosition.z
-            };
+            // Currently everything is locked to left-right axis (forward/backward on the gun)
+            var direction = mod.parent.InverseTransformDirection(Vector3.right);
+
+            // Arbitrary magnitude for the moment
+            minLocalPosition = originalLocalPosition + (-0.25f * direction);
+            maxLocalPosition = originalLocalPosition + (0.25f * direction);
+            maxDistance = Vector3.Distance(minLocalPosition, maxLocalPosition);
         }
 
         public void OnPointerClick(PointerEventData eventData)
         {
             if (eventData.button == PointerEventData.InputButton.Right)
             {
-                switch (axis)
-                {
-                    case Axis.Y:
-                        mod.localPosition = new(mod.localPosition.x, originalValue, mod.localPosition.z);
-                        break;
-                    case Axis.Z:
-                        mod.localPosition = new(mod.localPosition.x, mod.localPosition.y, originalValue);
-                        break;
-                }
+                mod.localPosition = originalLocalPosition;
 
                 updatePositions();
 
-                if (Customizations.Offsets.TryGetValue(weaponId, out Dictionary<string, float> offsets))
+                if (Customizations.Offsets.TryGetValue(weaponId, out Dictionary<string, Vector3> offsets))
                 {
                     offsets.Remove(slotId);
                 }
@@ -176,72 +137,46 @@ public static class EditPatches
         {
             if (eventData.button != PointerEventData.InputButton.Left || mod.childCount <= 0)
             {
+                // Cancel drag
                 eventData.pointerDrag = null;
                 return;
             }
 
-            localMinValue = originalValue - 0.25f;
-            localMaxValue = originalValue + 0.25f;
-            Vector3 localMin = axis switch
-            {
-                Axis.Y => new(mod.localPosition.x, localMinValue, mod.localPosition.z),
-                Axis.Z => new(mod.localPosition.x, mod.localPosition.y, localMinValue),
-                _ => mod.localPosition
-            };
+            Vector3 minPosition = mod.parent.TransformPoint(minLocalPosition);
+            Vector3 maxPosition = mod.parent.TransformPoint(maxLocalPosition);
 
-            Vector3 localMax = axis switch
-            {
-                Axis.Y => new(mod.localPosition.x, localMaxValue, mod.localPosition.z),
-                Axis.Z => new(mod.localPosition.x, mod.localPosition.y, localMaxValue),
-                _ => mod.localPosition
-            };
-
-            Vector3 worldMin = mod.parent.TransformPoint(localMin);
-            Vector3 worldMax = mod.parent.TransformPoint(localMax);
-
-            Vector3 screenMin = viewporter.TargetCamera.WorldToScreenPoint(worldMin);
-            Vector3 screenMax = viewporter.TargetCamera.WorldToScreenPoint(worldMax);
+            minScreen = viewporter.TargetCamera.WorldToScreenPoint(minPosition);
+            maxScreen = viewporter.TargetCamera.WorldToScreenPoint(maxPosition);
 
             // Depending on gun rotation, might need to swap min and max
-            reversed = screenMin.x > screenMax.x;
-
-            screenMinX = reversed ? screenMax.x : screenMin.x;
-            screenMaxX = reversed ? screenMin.x : screenMax.x;
+            if (reversed = minScreen.x > maxScreen.x)
+            {
+                (minScreen, maxScreen) = (maxScreen, minScreen);
+            }
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            float positionX = Mathf.Clamp(eventData.position.x, screenMinX, screenMaxX);
-            float screenDelta = (positionX - screenMinX) / (screenMaxX - screenMinX);
+            // Clamp the mouse position between the screen points
+            Vector2 screenPosition = Vector2.Max(minScreen, Vector2.Min(maxScreen, eventData.position));
+            float percentDelta = Vector2.Distance(minScreen, screenPosition) / Vector2.Distance(minScreen, maxScreen);
 
-            float newLocalValue = reversed ?
-                localMaxValue - screenDelta * (localMaxValue - localMinValue) :
-                localMinValue + screenDelta * (localMaxValue - localMinValue);
-
-            mod.localPosition = axis switch
-            {
-                Axis.Y => new(mod.localPosition.x, newLocalValue, mod.localPosition.z),
-                Axis.Z => new(mod.localPosition.x, mod.localPosition.y, newLocalValue),
-                _ => mod.localPosition
-            };
+            mod.localPosition = reversed ?
+                Vector3.MoveTowards(maxLocalPosition, minLocalPosition, percentDelta * maxDistance) :
+                Vector3.MoveTowards(minLocalPosition, maxLocalPosition, percentDelta * maxDistance);
 
             updatePositions();
         }
 
         public void OnEndDrag(PointerEventData eventData)
         {
-            if (!Customizations.Offsets.TryGetValue(weaponId, out Dictionary<string, float> offsets))
+            if (!Customizations.Offsets.TryGetValue(weaponId, out Dictionary<string, Vector3> offsets))
             {
-                offsets = new Dictionary<string, float>();
+                offsets = [];
                 Customizations.Offsets.Add(weaponId, offsets);
             }
 
-            offsets[slotId] = axis switch
-            {
-                Axis.Y => mod.localPosition.y,
-                Axis.Z => mod.localPosition.z,
-                _ => mod.localPosition.z
-            };
+            offsets[slotId] = mod.localPosition - originalLocalPosition;
         }
     }
 }

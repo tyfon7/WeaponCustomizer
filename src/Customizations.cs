@@ -1,8 +1,9 @@
 using System.Collections.Generic;
+using UnityEngine;
 
 namespace WeaponCustomizer;
 
 public static class Customizations
 {
-    public static Dictionary<string, Dictionary<string, float>> Offsets = [];
+    public static Dictionary<string, Dictionary<string, Vector3>> Offsets = [];
 }

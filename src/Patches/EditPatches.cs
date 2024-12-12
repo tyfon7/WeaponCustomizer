@@ -57,30 +57,36 @@ public static class EditPatches
         }
 
         [PatchPostfix]
-        public static void Postfix(ModdingScreenSlotView __instance, Image ____boneIcon, Transform ___transform_0, GInterface386 ___ginterface386_0, LootItemClass ___lootItemClass, Slot ___slot_0)
+        public static void Postfix(
+            ModdingScreenSlotView __instance,
+            Image ____boneIcon,
+            Transform ___transform_0,
+            GInterface444 ___ginterface444_0,
+            CompoundItem ___compoundItem_0,
+            Slot ___slot_0,
+            LineRenderer ____lineRenderer)
         {
-            if (!MovableMods.Contains(___transform_0.name))
-            {
-                return;
-            }
+            // if (!MovableMods.Contains(___transform_0.name))
+            // {
+            //     return;
+            // }
 
-            UpdatePositionsMethod = AccessTools.Method(___ginterface386_0.GetType(), "UpdatePositions");
-            ViewporterField = AccessTools.Field(___ginterface386_0.GetType(), "_viewporter");
-            var viewporter = ViewporterField.GetValue(___ginterface386_0) as CameraViewporter;
+            UpdatePositionsMethod = AccessTools.Method(___ginterface444_0.GetType(), "UpdatePositions");
+            ViewporterField = AccessTools.Field(___ginterface444_0.GetType(), "_viewporter");
+            var viewporter = ViewporterField.GetValue(___ginterface444_0) as CameraViewporter;
             var originalLocalPosition = ___transform_0.localPosition;
 
             // Load the offsets
-            if (Customizations.Offsets.TryGetValue(___lootItemClass.Id, out Dictionary<string, Vector3> offsets))
+            if (Customizations.Offsets.TryGetValue(___compoundItem_0.Id, out Dictionary<string, Vector3> offsets))
             {
                 if (offsets.TryGetValue(___slot_0.FullId, out Vector3 offset))
                 {
                     ___transform_0.localPosition += offset;
-                    UpdatePositionsMethod.Invoke(___ginterface386_0, []);
+                    UpdatePositionsMethod.Invoke(___ginterface444_0, []);
                 }
             }
 
-
-            ____boneIcon.GetOrAddComponent<DraggableBone>().Init(___transform_0, ___lootItemClass.Id, ___slot_0.FullId, viewporter, originalLocalPosition, () => UpdatePositionsMethod.Invoke(___ginterface386_0, []));
+            ____boneIcon.GetOrAddComponent<DraggableBone>().Init(___transform_0, ___compoundItem_0.Id, ___slot_0.FullId, viewporter, originalLocalPosition, () => UpdatePositionsMethod.Invoke(___ginterface444_0, []));
         }
     }
 
@@ -98,6 +104,7 @@ public static class EditPatches
         private float maxDistance;
         private Vector2 minScreen;
         private Vector2 maxScreen;
+        private Vector2 dragOffset;
         private bool reversed;
 
         public void Init(Transform mod, string weaponId, string slotId, CameraViewporter viewporter, Vector3 originalLocalPosition, Action updatePositions)
@@ -113,8 +120,8 @@ public static class EditPatches
             var direction = mod.parent.InverseTransformDirection(Vector3.right);
 
             // Arbitrary magnitude for the moment
-            minLocalPosition = originalLocalPosition + (-0.25f * direction);
-            maxLocalPosition = originalLocalPosition + (0.25f * direction);
+            minLocalPosition = originalLocalPosition + (-0.1f * direction);
+            maxLocalPosition = originalLocalPosition + (0.1f * direction);
             maxDistance = Vector3.Distance(minLocalPosition, maxLocalPosition);
         }
 
@@ -142,6 +149,8 @@ public static class EditPatches
                 return;
             }
 
+            dragOffset = eventData.position - (Vector2)viewporter.TargetCamera.WorldToScreenPoint(mod.position);
+
             Vector3 minPosition = mod.parent.TransformPoint(minLocalPosition);
             Vector3 maxPosition = mod.parent.TransformPoint(maxLocalPosition);
 
@@ -158,7 +167,7 @@ public static class EditPatches
         public void OnDrag(PointerEventData eventData)
         {
             // Clamp the mouse position between the screen points
-            Vector2 screenPosition = Vector2.Max(minScreen, Vector2.Min(maxScreen, eventData.position));
+            Vector2 screenPosition = Vector2.Max(minScreen, Vector2.Min(maxScreen, eventData.position - dragOffset));
             float percentDelta = Vector2.Distance(minScreen, screenPosition) / Vector2.Distance(minScreen, maxScreen);
 
             mod.localPosition = reversed ?

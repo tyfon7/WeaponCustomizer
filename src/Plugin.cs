@@ -1,9 +1,4 @@
 ﻿using BepInEx;
-using BepInEx.Bootstrap;
-using Comfort.Common;
-using EFT;
-using TMPro;
-using UnityEngine.EventSystems;
 
 namespace WeaponCustomizer;
 
@@ -13,5 +8,7 @@ public class Plugin : BaseUnityPlugin
     public void Awake()
     {
         EditPatches.Enable();
+        ClonePatches.Enable();
+        ApplyPatches.Enable();
     }
 }

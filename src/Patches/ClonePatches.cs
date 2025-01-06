@@ -22,12 +22,12 @@ public static class ClonePatches
         [PatchPostfix]
         public static void Postfix(Item originalItem, ref Item __result)
         {
-            if (originalItem is not Weapon)
+            if (originalItem is not Weapon weapon || __result is not Weapon to)
             {
                 return;
             }
 
-            Customizations.Copy(originalItem.Id, __result.Id);
+            weapon.ShareCustomization(to);
         }
     }
 }

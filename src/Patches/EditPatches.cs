@@ -61,7 +61,7 @@ public static class EditPatches
             CompoundItem ___compoundItem_0,
             Slot ___slot_0)
         {
-            if (!MovableMods.Contains(___transform_0.name))
+            if (!MovableMods.Contains(___transform_0.name) || ___compoundItem_0 is not Weapon weapon)
             {
                 return;
             }
@@ -71,8 +71,9 @@ public static class EditPatches
             var viewporter = ViewporterField.GetValue(___ginterface444_0) as CameraViewporter;
 
             ____boneIcon.GetOrAddComponent<DraggableBone>().Init(
+                ____boneIcon,
                 ___transform_0,
-                ___compoundItem_0.Id,
+                weapon,
                 ___slot_0.FullId,
                 viewporter,
                 () => UpdatePositionsMethod.Invoke(___ginterface444_0, []));

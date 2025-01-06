@@ -4,7 +4,7 @@
     "main": "src/mod.js",
     "license": "MIT",
     "author": "Tyfon",
-    "sptVersion": "~3.9",
+    "sptVersion": "~3.10",
     "loadBefore": [],
     "loadAfter": [],
     "incompatibilities": [],

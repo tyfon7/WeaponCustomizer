@@ -1,14 +1,18 @@
 using System;
+using EFT.InventoryLogic;
 using EFT.UI;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.UI;
 
 namespace WeaponCustomizer;
 
-public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler
+public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
+    private const float MOVE_DISTANCE = 0.3f;
+    private Image boneIcon;
     private Transform mod;
-    private string weaponId;
+    private Weapon weapon;
     private string slotId;
     private CameraViewporter viewporter;
     private Action updatePositions;
@@ -22,16 +26,20 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     private Vector2 dragOffset;
     private bool reversed;
 
-    public void Init(Transform mod, string weaponId, string slotId, CameraViewporter viewporter, Action updatePositions)
+    private bool dragging;
+    private bool hovered;
+
+    public void Init(Image boneIcon, Transform mod, Weapon weapon, string slotId, CameraViewporter viewporter, Action updatePositions)
     {
+        this.boneIcon = boneIcon;
         this.mod = mod;
-        this.weaponId = weaponId;
+        this.weapon = weapon;
         this.slotId = slotId;
         this.viewporter = viewporter;
         this.updatePositions = updatePositions;
 
         originalLocalPosition = mod.localPosition;
-        if (Customizations.IsCustomized(weaponId, slotId, out CustomPosition customPosition))
+        if (weapon.IsCustomized(slotId, out CustomPosition customPosition))
         {
             originalLocalPosition = customPosition.OriginalPosition;
         }
@@ -40,9 +48,33 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         var direction = mod.parent.InverseTransformDirection(Vector3.right);
 
         // Arbitrary magnitude for the moment
-        minLocalPosition = originalLocalPosition + (-0.2f * direction);
-        maxLocalPosition = originalLocalPosition + (0.2f * direction);
+        minLocalPosition = originalLocalPosition - (MOVE_DISTANCE * direction);
+        maxLocalPosition = originalLocalPosition + (MOVE_DISTANCE * direction);
         maxDistance = Vector3.Distance(minLocalPosition, maxLocalPosition);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        hovered = true;
+        SetColor();
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        hovered = false;
+        SetColor();
+    }
+
+    private void SetColor()
+    {
+        if (hovered || dragging)
+        {
+            boneIcon.color = Color.cyan;
+        }
+        else
+        {
+            boneIcon.color = Color.white;
+        }
     }
 
     public void OnPointerClick(PointerEventData eventData)
@@ -53,7 +85,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
 
             updatePositions();
 
-            Customizations.Reset(weaponId, slotId);
+            weapon.ResetCustomization(slotId);
         }
     }
 
@@ -65,6 +97,9 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
             eventData.pointerDrag = null;
             return;
         }
+
+        dragging = true;
+        SetColor();
 
         dragOffset = eventData.position - (Vector2)viewporter.TargetCamera.WorldToScreenPoint(mod.position);
 
@@ -96,6 +131,9 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        Customizations.Set(weaponId, slotId, new(originalLocalPosition, mod.localPosition));
+        dragging = false;
+        SetColor();
+
+        weapon.SetCustomization(slotId, new() { OriginalPosition = originalLocalPosition, Position = mod.localPosition });
     }
 }

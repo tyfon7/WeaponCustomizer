@@ -29,7 +29,7 @@ public static class ApplyPatches
                 return;
             }
 
-            if (Customizations.IsCustomized(weapon.Id, parentSlot.FullId, out CustomPosition customPosition))
+            if (weapon.IsCustomized(parentSlot.FullId, out CustomPosition customPosition))
             {
                 Logger.LogInfo($"WC: Updating {__instance.Bone.name} localPosition from ({__instance.Bone.localPosition.x}, {__instance.Bone.localPosition.y}, {__instance.Bone.localPosition.z}) to ({customPosition.Position.x}, {customPosition.Position.y}, {customPosition.Position.z})");
                 __instance.Bone.localPosition = customPosition.Position;
@@ -37,23 +37,24 @@ public static class ApplyPatches
         }
     }
 
-    // Force the weapon icon to be regenerated
+    // Include customizations in the item hash, so the icon cache knows when to update
     public class IconPatch : ModulePatch
     {
-        public static readonly HashSet<string> WeaponIdsToRefresh = [];
-
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(GClass894), nameof(GClass894.GetItemIcon));
+            return AccessTools.Method(typeof(GClass896), nameof(GClass896.GetItemHash));
         }
 
-        [PatchPrefix]
-        public static void Prefix(Item item, ref bool forcedGeneration)
+        [PatchPostfix]
+        public static void Postfix(Item item, ref int __result)
         {
-            if (WeaponIdsToRefresh.Contains(item.Id))
+            if (item is Weapon weapon && weapon.IsCustomized(out Dictionary<string, CustomPosition> slots))
             {
-                forcedGeneration = true;
-                WeaponIdsToRefresh.Remove(item.Id);
+                foreach (var (key, value) in slots)
+                {
+                    __result *= 31 + key.GetHashCode();
+                    __result *= 31 + value.GetHashCode();
+                }
             }
         }
     }

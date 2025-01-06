@@ -7,6 +7,7 @@ public class Plugin : BaseUnityPlugin
 {
     public void Awake()
     {
+        LoadPatches.Enable();
         EditPatches.Enable();
         ClonePatches.Enable();
         ApplyPatches.Enable();

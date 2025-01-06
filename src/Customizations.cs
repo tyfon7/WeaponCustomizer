@@ -1,15 +1,27 @@
+using EFT.InventoryLogic;
+using Newtonsoft.Json;
+using SPT.Common.Http;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Threading.Tasks;
+using UnityEngine;
 
 namespace WeaponCustomizer;
 
 public static class Customizations
 {
-    private static Dictionary<string, Dictionary<string, CustomPosition>> ModPositions = [];
+    // Never remove the dictionary once added to a weapon, it may be shared with other clones of this weapon
+    private static readonly ConditionalWeakTable<Weapon, Dictionary<string, CustomPosition>> ModPositions = new();
 
-    public static bool IsCustomized(string weaponId, string slotId, out CustomPosition customPosition)
+    public static bool IsCustomized(this Weapon weapon, out Dictionary<string, CustomPosition> slots)
     {
-        if (ModPositions.TryGetValue(weaponId, out Dictionary<string, CustomPosition> customPositions) &&
-            customPositions.TryGetValue(slotId, out customPosition))
+        return ModPositions.TryGetValue(weapon, out slots);
+    }
+
+    public static bool IsCustomized(this Weapon weapon, string slotId, out CustomPosition customPosition)
+    {
+        if (ModPositions.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots) &&
+            slots.TryGetValue(slotId, out customPosition))
         {
             return true;
         }
@@ -18,45 +30,96 @@ public static class Customizations
         return false;
     }
 
-    public static void Set(string weaponId, string slotId, CustomPosition customPosition)
+    public static void SetCustomization(this Weapon weapon, string slotId, CustomPosition customPosition)
     {
-        if (!ModPositions.TryGetValue(weaponId, out Dictionary<string, CustomPosition> customPositions))
-        {
-            customPositions = [];
-            ModPositions[weaponId] = customPositions;
-        }
+        var slots = ModPositions.GetOrCreateValue(weapon);
+        slots[slotId] = customPosition;
 
-        customPositions[slotId] = customPosition;
-
-        RefreshIcon(weaponId);
+        SaveCustomizations(weapon.Id, slots);
     }
 
-    public static void Reset(string weaponId, string slotId)
+    public static void ResetCustomization(this Weapon weapon, string slotId)
     {
-        if (ModPositions.TryGetValue(weaponId, out Dictionary<string, CustomPosition> customPositions))
+        if (ModPositions.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
         {
-            customPositions.Remove(slotId);
-            if (customPositions.Count == 0)
+            slots.Remove(slotId);
+            SaveCustomizations(weapon.Id, slots);
+        }
+    }
+
+    public static void ShareCustomization(this Weapon weapon, Weapon to)
+    {
+        if (ModPositions.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
+        {
+            ModPositions.Add(to, slots);
+
+            // Hypothesis: Cloned weapons are always for display purposes, only the original needs to be saved
+        }
+    }
+
+    private static void SaveCustomizations(string weaponId, Dictionary<string, CustomPosition> slots)
+    {
+        SavePayload payload = new()
+        {
+            weaponId = weaponId,
+            slots = []
+        };
+
+        foreach (var (slotId, customPosition) in slots)
+        {
+            payload.slots[slotId] = customPosition;
+        }
+
+        RequestHandler.PutJsonAsync("/weaponcustomizer/save", JsonConvert.SerializeObject(payload));
+    }
+
+    public static async Task LoadCustomizations(Inventory inventory)
+    {
+        string payload = await RequestHandler.GetJsonAsync("/weaponcustomizer/load");
+        var customizations = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, CustomPositionJson>>>(payload);
+
+        foreach (Item item in inventory.GetPlayerItems(EPlayerItems.NonQuestItems))
+        {
+            if (item is not Weapon weapon)
             {
-                ModPositions.Remove(weaponId);
+                continue;
             }
 
-            RefreshIcon(weaponId);
+            if (customizations.TryGetValue(weapon.Id, out Dictionary<string, CustomPositionJson> slots))
+            {
+                var customPositions = ModPositions.GetOrCreateValue(weapon);
+                customPositions.Clear();
+
+                foreach (var (slotId, customPosition) in slots)
+                {
+                    customPositions[slotId] = customPosition;
+                }
+            }
         }
     }
 
-    public static void Copy(string fromWeaponId, string toWeaponId)
+    private struct SavePayload
     {
-        if (ModPositions.TryGetValue(fromWeaponId, out Dictionary<string, CustomPosition> customPositions))
-        {
-            ModPositions[toWeaponId] = customPositions;
-            RefreshIcon(toWeaponId);
-        }
+        public string weaponId;
+        public Dictionary<string, CustomPositionJson> slots;
     }
 
-    public static void RefreshIcon(string weaponId)
+    private struct CustomPositionJson
     {
-        ApplyPatches.IconPatch.WeaponIdsToRefresh.Add(weaponId);
+        public Vector3Json position;
+        public Vector3Json original;
+
+        public static implicit operator CustomPositionJson(CustomPosition c) => new() { position = c.Position, original = c.OriginalPosition };
+        public static implicit operator CustomPosition(CustomPositionJson c) => new() { OriginalPosition = c.original, Position = c.position };
     }
 
+    private struct Vector3Json
+    {
+        public float x;
+        public float y;
+        public float z;
+
+        public static implicit operator Vector3Json(Vector3 v) => new() { x = v.x, y = v.y, z = v.z };
+        public static implicit operator Vector3(Vector3Json v) => new(v.x, v.y, v.z);
+    }
 }

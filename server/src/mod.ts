@@ -1,16 +1,99 @@
 import type { DependencyContainer } from "tsyringe";
 
 import type { IPreSptLoadMod } from "@spt/models/external/IPreSptLoadMod";
+import { LogTextColor } from "@spt/models/spt/logging/LogTextColor";
 import type { ILogger } from "@spt/models/spt/utils/ILogger";
-import type { DatabaseService } from "@spt/services/DatabaseService";
+import type { StaticRouterModService } from "@spt/services/mod/staticRouter/StaticRouterModService";
+import { VFS } from "@spt/utils/VFS";
+import fs from "node:fs";
+import path from "node:path";
+
+type Vector3 = {
+    x: number;
+    y: number;
+    z: number;
+};
+
+type CustomPosition = {
+    original: Vector3;
+    modified: Vector3;
+};
+
+type CustomizePayload = {
+    weaponId: string;
+    slots: Record<string, CustomPosition>;
+};
+
+type Customizations = Record<string, Record<string, CustomPosition>>;
 
 class WeaponCustomizer implements IPreSptLoadMod {
-    private databaseService: DatabaseService;
     private logger: ILogger;
+    private vfs: VFS;
+    private customizations: Customizations = null;
+    private filepath: string;
 
     public preSptLoad(container: DependencyContainer): void {
-        this.databaseService = container.resolve<DatabaseService>("DatabaseService");
         this.logger = container.resolve<ILogger>("PrimaryLogger");
+        this.vfs = container.resolve<VFS>("VFS");
+        const staticRouterModService = container.resolve<StaticRouterModService>("StaticRouterModService");
+
+        this.filepath = path.resolve(__dirname, "../customizations.json");
+        this.load();
+
+        staticRouterModService.registerStaticRouter(
+            "WeaponCustomizerRoutes",
+            [
+                {
+                    url: "/weaponcustomizer/save",
+                    action: async (url, info: CustomizePayload, sessionId, output) => this.saveCustomization(info)
+                },
+                {
+                    url: "/weaponcustomizer/load",
+                    action: async (url, info, sessionId, output) => JSON.stringify(this.customizations)
+                }
+            ],
+            "custom-static-weapon-customizer"
+        );
+    }
+
+    private async saveCustomization(payload: CustomizePayload): Promise<string> {
+        //this.logger.info(`WeaponCustomizer: Saving customization for weapon ${payload.weaponId}`);
+        if (Object.keys(payload.slots).length === 0) {
+            delete this.customizations[payload.weaponId];
+        } else {
+            this.customizations[payload.weaponId] = payload.slots;
+        }
+        await this.save();
+        return JSON.stringify({ success: true });
+    }
+
+    private load() {
+        try {
+            if (this.vfs.exists(this.filepath)) {
+                this.customizations = JSON.parse(this.vfs.readFile(this.filepath));
+            } else {
+                this.customizations = {};
+
+                // Create the file with fs - vfs.writeFile pukes on windows paths if it needs to create the file
+                fs.writeFileSync(this.filepath, JSON.stringify(this.customizations));
+            }
+
+            const count = Object.keys(this.customizations).length;
+            if (count > 0) {
+                this.logger.logWithColor(`WeaponCustomizer: ${count} weapon customizations loaded.`, LogTextColor.CYAN);
+            }
+        } catch (error) {
+            this.logger.error("WeaponCustomizer: Failed to load weapon customization! " + error);
+            this.customizations = {};
+        }
+    }
+
+    private async save() {
+        try {
+            await this.vfs.writeFileAsync(this.filepath, JSON.stringify(this.customizations, null, 2));
+        } catch (error) {
+            this.logger.error("WeaponCustomizer: Failed to save weapon customization! " + error);
+        }
     }
 }
 

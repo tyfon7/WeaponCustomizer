@@ -7,9 +7,11 @@ public struct CustomPosition
     public Vector3 OriginalPosition;
     public Vector3 Position;
 
-    public CustomPosition(Vector3 originalPosition, Vector3 position)
+    public override int GetHashCode()
     {
-        OriginalPosition = originalPosition;
-        Position = position;
+        int hash = 17;
+        hash *= 31 + OriginalPosition.GetHashCode();
+        hash *= 31 + Position.GetHashCode();
+        return hash;
     }
 }

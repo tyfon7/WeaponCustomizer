@@ -15,7 +15,12 @@ public static class Customizations
 
     public static bool IsCustomized(this Weapon weapon, out Dictionary<string, CustomPosition> slots)
     {
-        return ModPositions.TryGetValue(weapon, out slots);
+        if (ModPositions.TryGetValue(weapon, out slots))
+        {
+            return slots.Count > 0;
+        }
+
+        return false;
     }
 
     public static bool IsCustomized(this Weapon weapon, string slotId, out CustomPosition customPosition)
@@ -36,6 +41,16 @@ public static class Customizations
         slots[slotId] = customPosition;
 
         SaveCustomizations(weapon.Id, slots);
+    }
+
+    public static void ResetCustomization(this Weapon weapon)
+    {
+        // Clear the dictionary, don't remove it - clones still will have copies
+        if (ModPositions.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
+        {
+            slots.Clear();
+            SaveCustomizations(weapon.Id, slots);
+        }
     }
 
     public static void ResetCustomization(this Weapon weapon, string slotId)

@@ -38,9 +38,12 @@ public static class EditPatches
         "mod_mount_002"
     ];
 
+    private static DefaultUIButton RevertButton;
+
     public static void Enable()
     {
         new BoneMoverPatch().Enable();
+        new RevertButtonPatch().Enable();
     }
 
     public class BoneMoverPatch : ModulePatch
@@ -76,7 +79,75 @@ public static class EditPatches
                 weapon,
                 ___slot_0.FullId,
                 viewporter,
-                () => UpdatePositionsMethod.Invoke(___ginterface444_0, []));
+                (done) =>
+                {
+                    UpdatePositionsMethod.Invoke(___ginterface444_0, []);
+                    if (done)
+                    {
+                        if (weapon.IsCustomized(out _))
+                        {
+                            RevertButton.ShowGameObject();
+                        }
+                        else
+                        {
+                            RevertButton.HideGameObject();
+                        }
+                    }
+                });
+        }
+    }
+
+    public class RevertButtonPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.DeclaredMethod(typeof(WeaponModdingScreen).BaseType, nameof(WeaponModdingScreen.Show));
+        }
+
+        [PatchPostfix]
+        public static void Postfix(MonoBehaviour __instance, Item item, DefaultUIButton ____backButton)
+        {
+            var foundTransform = __instance.transform.Find("RevertButton");
+            if (foundTransform != null)
+            {
+                RevertButton = foundTransform.GetComponent<DefaultUIButton>();
+            }
+            else
+            {
+                RevertButton = UnityEngine.Object.Instantiate(____backButton, ____backButton.transform.parent, false);
+                RevertButton.name = "RevertButton";
+                RevertButton.SetHeaderText("Revert");
+
+                RectTransform revertTransform = RevertButton.RectTransform();
+                revertTransform.pivot = Vector2.one;
+                revertTransform.anchorMin = revertTransform.anchorMax = Vector2.one;
+                revertTransform.anchoredPosition = new Vector2(revertTransform.anchoredPosition.x, -25f);
+            }
+
+            RevertButton.OnClick.RemoveAllListeners();
+            if (item is Weapon weapon)
+            {
+                RevertButton.OnClick.AddListener(() =>
+                {
+                    foreach (var bone in __instance.GetComponentsInChildren<DraggableBone>())
+                    {
+                        bone.Reset();
+                    }
+                });
+
+                if (weapon.IsCustomized(out _))
+                {
+                    RevertButton.ShowGameObject();
+                }
+                else
+                {
+                    RevertButton.HideGameObject();
+                }
+            }
+            else
+            {
+                RevertButton.HideGameObject();
+            }
         }
     }
 }

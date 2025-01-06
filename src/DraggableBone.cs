@@ -9,13 +9,13 @@ namespace WeaponCustomizer;
 
 public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEndDragHandler, IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler
 {
-    private const float MOVE_DISTANCE = 0.3f;
+    private const float MOVE_DISTANCE = 0.5f;
     private Image boneIcon;
     private Transform mod;
     private Weapon weapon;
     private string slotId;
     private CameraViewporter viewporter;
-    private Action updatePositions;
+    private Action<bool> onChange;
 
     private Vector3 originalLocalPosition;
     private Vector3 minLocalPosition;
@@ -29,14 +29,14 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     private bool dragging;
     private bool hovered;
 
-    public void Init(Image boneIcon, Transform mod, Weapon weapon, string slotId, CameraViewporter viewporter, Action updatePositions)
+    public void Init(Image boneIcon, Transform mod, Weapon weapon, string slotId, CameraViewporter viewporter, Action<bool> onChange)
     {
         this.boneIcon = boneIcon;
         this.mod = mod;
         this.weapon = weapon;
         this.slotId = slotId;
         this.viewporter = viewporter;
-        this.updatePositions = updatePositions;
+        this.onChange = onChange;
 
         originalLocalPosition = mod.localPosition;
         if (weapon.IsCustomized(slotId, out CustomPosition customPosition))
@@ -67,7 +67,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
 
     private void SetColor()
     {
-        if (hovered || dragging)
+        if (mod.childCount > 0 && (hovered || dragging))
         {
             boneIcon.color = Color.cyan;
         }
@@ -81,11 +81,18 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     {
         if (eventData.button == PointerEventData.InputButton.Right)
         {
+            Reset();
+        }
+    }
+
+    public void Reset()
+    {
+        if (mod.localPosition != originalLocalPosition)
+        {
             mod.localPosition = originalLocalPosition;
-
-            updatePositions();
-
             weapon.ResetCustomization(slotId);
+
+            onChange(true);
         }
     }
 
@@ -126,7 +133,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
             Vector3.MoveTowards(maxLocalPosition, minLocalPosition, percentDelta * maxDistance) :
             Vector3.MoveTowards(minLocalPosition, maxLocalPosition, percentDelta * maxDistance);
 
-        updatePositions();
+        onChange(false);
     }
 
     public void OnEndDrag(PointerEventData eventData)
@@ -135,5 +142,6 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         SetColor();
 
         weapon.SetCustomization(slotId, new() { OriginalPosition = originalLocalPosition, Position = mod.localPosition });
+        onChange(true);
     }
 }

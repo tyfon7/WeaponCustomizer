@@ -122,8 +122,9 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
         }
 
         if (dirtyCount > 0) {
-            this.logger.info(
-                `WeaponCustomizer: Cleaned up ${dirtyCount} customizations for weapons that no longer exist`
+            this.logger.logWithColor(
+                `WeaponCustomizer: Cleaned up ${dirtyCount} customizations for weapons that no longer exist`,
+                LogTextColor.CYAN
             );
 
             await this.save();

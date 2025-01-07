@@ -31,7 +31,7 @@ public static class ApplyPatches
 
             if (weapon.IsCustomized(parentSlot.FullId, out CustomPosition customPosition))
             {
-                Logger.LogInfo($"WC: Updating {__instance.Bone.name} localPosition from ({__instance.Bone.localPosition.x}, {__instance.Bone.localPosition.y}, {__instance.Bone.localPosition.z}) to ({customPosition.Position.x}, {customPosition.Position.y}, {customPosition.Position.z})");
+                //Logger.LogInfo($"WC: Updating {__instance.Bone.name} localPosition from ({__instance.Bone.localPosition.x}, {__instance.Bone.localPosition.y}, {__instance.Bone.localPosition.z}) to ({customPosition.Position.x}, {customPosition.Position.y}, {customPosition.Position.z})");
                 __instance.Bone.localPosition = customPosition.Position;
             }
         }

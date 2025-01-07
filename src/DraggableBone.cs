@@ -44,8 +44,10 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
             originalLocalPosition = customPosition.OriginalPosition;
         }
 
+        // These bones get reinitialized when attachments are added, so we can't assume the gun is straight. The rotator has the rotation
+        var rotator = mod.root.Find("Rotator");
         // Currently everything is locked to left-right axis (forward/backward on the gun)
-        var direction = mod.parent.InverseTransformDirection(Vector3.right);
+        var direction = mod.parent.InverseTransformDirection(rotator.right);
 
         // Arbitrary magnitude for the moment
         minLocalPosition = originalLocalPosition - (MOVE_DISTANCE * direction);

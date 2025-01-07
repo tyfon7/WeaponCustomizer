@@ -1,6 +1,8 @@
 using EFT.InventoryLogic;
 using Newtonsoft.Json;
 using SPT.Common.Http;
+using SPT.Reflection.Utils;
+using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
@@ -10,7 +12,6 @@ namespace WeaponCustomizer;
 
 public static class Customizations
 {
-    // Never remove the dictionary once added to a weapon, it may be shared with other clones of this weapon
     private static readonly ConditionalWeakTable<Weapon, Dictionary<string, CustomPosition>> ModPositions = new();
 
     public static bool IsCustomized(this Weapon weapon, out Dictionary<string, CustomPosition> slots)
@@ -40,16 +41,26 @@ public static class Customizations
         var slots = ModPositions.GetOrCreateValue(weapon);
         slots[slotId] = customPosition;
 
-        SaveCustomizations(weapon.Id, slots);
+        // Only save the actual guns, not copies in the edit build screen
+        if (weapon.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
+        {
+            SaveCustomizations(weapon.Id, slots);
+        }
     }
 
-    public static void ResetCustomization(this Weapon weapon)
+    public static void ResetCustomizations(this Weapon weapon)
     {
-        // Clear the dictionary, don't remove it - clones still will have copies
+        // Clear the dictionary first, don't just remove it - clones still will have copies
         if (ModPositions.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
         {
             slots.Clear();
-            SaveCustomizations(weapon.Id, slots);
+            ModPositions.Remove(weapon);
+
+            // Only save the actual guns, not copies in the edit build screen
+            if (weapon.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
+            {
+                SaveCustomizations(weapon.Id, null);
+            }
         }
     }
 
@@ -58,17 +69,43 @@ public static class Customizations
         if (ModPositions.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
         {
             slots.Remove(slotId);
-            SaveCustomizations(weapon.Id, slots);
+            if (slots.Count == 0)
+            {
+                ModPositions.Remove(weapon);
+                slots = null;
+            }
+
+            // Only save the actual guns, not copies in the edit build screen
+            if (weapon.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
+            {
+                SaveCustomizations(weapon.Id, slots);
+            }
         }
     }
 
-    public static void ShareCustomization(this Weapon weapon, Weapon to)
+    // This is called by the clone patch, for icon generation, and also the modding screens
+    public static void ShareCustomizations(this Weapon weapon, Weapon to)
     {
+        ModPositions.Remove(to);
         if (ModPositions.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
         {
             ModPositions.Add(to, slots);
+        }
 
-            // Hypothesis: Cloned weapons are always for display purposes, only the original needs to be saved
+        // Only save the actual guns, not copies in the edit build screen
+        if (to.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
+        {
+            SaveCustomizations(to.Id, slots);
+        }
+    }
+
+    // Used by the edit screen, to create a separate setting that will not automatically reflect back onto the original
+    public static void UnshareCustomizations(this Weapon weapon)
+    {
+        if (ModPositions.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
+        {
+            ModPositions.Remove(weapon);
+            ModPositions.Add(weapon, new Dictionary<string, CustomPosition>(slots));
         }
     }
 
@@ -80,9 +117,12 @@ public static class Customizations
             slots = []
         };
 
-        foreach (var (slotId, customPosition) in slots)
+        if (slots != null)
         {
-            payload.slots[slotId] = customPosition;
+            foreach (var (slotId, customPosition) in slots)
+            {
+                payload.slots[slotId] = customPosition;
+            }
         }
 
         RequestHandler.PutJsonAsync("/weaponcustomizer/save", JsonConvert.SerializeObject(payload));

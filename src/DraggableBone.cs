@@ -89,13 +89,10 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
 
     public void Reset()
     {
-        if (mod.localPosition != originalLocalPosition)
-        {
-            mod.localPosition = originalLocalPosition;
-            weapon.ResetCustomization(slotId);
+        mod.localPosition = originalLocalPosition;
+        weapon.ResetCustomization(slotId);
 
-            onChange(true);
-        }
+        onChange(true);
     }
 
     public void OnBeginDrag(PointerEventData eventData)

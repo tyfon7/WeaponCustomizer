@@ -1,5 +1,7 @@
 import type { DependencyContainer } from "tsyringe";
 
+import type { ProfileHelper } from "@spt/helpers/ProfileHelper";
+import type { IPostSptLoadMod } from "@spt/models/external/IPostSptLoadMod";
 import type { IPreSptLoadMod } from "@spt/models/external/IPreSptLoadMod";
 import { LogTextColor } from "@spt/models/spt/logging/LogTextColor";
 import type { ILogger } from "@spt/models/spt/utils/ILogger";
@@ -26,15 +28,17 @@ type CustomizePayload = {
 
 type Customizations = Record<string, Record<string, CustomPosition>>;
 
-class WeaponCustomizer implements IPreSptLoadMod {
+class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
     private logger: ILogger;
     private vfs: VFS;
+    private profileHelper: ProfileHelper;
     private customizations: Customizations = null;
     private filepath: string;
 
     public preSptLoad(container: DependencyContainer): void {
         this.logger = container.resolve<ILogger>("PrimaryLogger");
         this.vfs = container.resolve<VFS>("VFS");
+
         const staticRouterModService = container.resolve<StaticRouterModService>("StaticRouterModService");
 
         this.filepath = path.resolve(__dirname, "../customizations.json");
@@ -56,6 +60,11 @@ class WeaponCustomizer implements IPreSptLoadMod {
         );
     }
 
+    public postSptLoad(container: DependencyContainer): void {
+        this.profileHelper = container.resolve<ProfileHelper>("ProfileHelper");
+        this.clean();
+    }
+
     private async saveCustomization(payload: CustomizePayload): Promise<string> {
         //this.logger.info(`WeaponCustomizer: Saving customization for weapon ${payload.weaponId}`);
         if (Object.keys(payload.slots).length === 0) {
@@ -64,6 +73,7 @@ class WeaponCustomizer implements IPreSptLoadMod {
             this.customizations[payload.weaponId] = payload.slots;
         }
         await this.save();
+
         return JSON.stringify({ success: true });
     }
 
@@ -85,6 +95,38 @@ class WeaponCustomizer implements IPreSptLoadMod {
         } catch (error) {
             this.logger.error("WeaponCustomizer: Failed to load weapon customization! " + error);
             this.customizations = {};
+        }
+    }
+
+    // Remove any customizations for items that no longer exist
+    private async clean() {
+        const map = new Map<string, boolean>();
+        for (const weaponId of Object.keys(this.customizations)) {
+            map.set(weaponId, false);
+        }
+
+        for (const profile of Object.values(this.profileHelper.getProfiles())) {
+            for (const item of profile.characters.pmc.Inventory.items) {
+                if (map.has(item._id)) {
+                    map.set(item._id, true);
+                }
+            }
+        }
+
+        let dirtyCount = 0;
+        for (const [weaponId, found] of Object.entries(map)) {
+            if (!found) {
+                delete this.customizations[weaponId];
+                dirtyCount++;
+            }
+        }
+
+        if (dirtyCount > 0) {
+            this.logger.info(
+                `WeaponCustomizer: Cleaned up ${dirtyCount} customizations for weapons that no longer exist`
+            );
+
+            await this.save();
         }
     }
 

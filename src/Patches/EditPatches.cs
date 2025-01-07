@@ -28,6 +28,8 @@ public static class EditPatches
         "mod_scope_002",
         "mod_scope_003",
         "mod_tactical",
+        "mod_tactical001",
+        "mod_tactical002",
         "mod_tactical_000",
         "mod_tactical_001",
         "mod_tactical_002",
@@ -35,7 +37,8 @@ public static class EditPatches
         "mod_mount",
         "mod_mount_000",
         "mod_mount_001",
-        "mod_mount_002"
+        "mod_mount_002",
+        "mod_bipod"
     ];
 
     private static DefaultUIButton RevertButton;

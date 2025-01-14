@@ -106,7 +106,8 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
         }
 
         for (const profile of Object.values(this.profileHelper.getProfiles())) {
-            for (const item of profile.characters?.pmc?.Inventory?.items) {
+            const items = profile.characters?.pmc?.Inventory?.items ?? [];
+            for (const item of items) {
                 if (map.has(item._id)) {
                     map.set(item._id, true);
                 }

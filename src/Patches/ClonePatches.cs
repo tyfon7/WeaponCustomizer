@@ -3,7 +3,6 @@ using EFT.UI;
 using HarmonyLib;
 using SPT.Reflection.Patching;
 using System.Reflection;
-using System.Threading.Tasks;
 
 namespace WeaponCustomizer;
 
@@ -12,7 +11,6 @@ public static class ClonePatches
     public static void Enable()
     {
         new ClonePatch().Enable();
-        new AssemblePatch().Enable();
         new SplitPresetPatch().Enable();
     }
 
@@ -32,26 +30,6 @@ public static class ClonePatches
             }
 
             weapon.ShareCustomizations(to);
-        }
-    }
-
-    public class AssemblePatch : ModulePatch
-    {
-        protected override MethodBase GetTargetMethod()
-        {
-            return AccessTools.Method(typeof(GClass3188), nameof(GClass3188.Assemble));
-        }
-
-        // itemBody is the real weapon, buildWeapon is the temporary preset being applied to the itemBody
-        [PatchPostfix]
-        public static async void Postfix(Weapon itemBody, Weapon buildWeapon, Task<bool> __result)
-        {
-            if (!await __result)
-            {
-                return;
-            }
-
-            buildWeapon.ShareCustomizations(itemBody);
         }
     }
 

@@ -1,3 +1,4 @@
+using Comfort.Common;
 using HarmonyLib;
 using SPT.Reflection.Patching;
 using System.Reflection;
@@ -16,14 +17,14 @@ public static class LoadPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(Class1374), nameof(Class1374.SelectProfile));
+            return AccessTools.Method(typeof(Class301), nameof(Class301.RequestBuilds));
         }
 
         [PatchPostfix]
-        public static async void Postfix(ISession backendSession, Task __result)
+        public static async void Postfix(ISession __instance, Task<IResult> __result)
         {
             await __result;
-            Customizations.LoadCustomizations(backendSession.Profile.Inventory).HandleExceptions();
+            Customizations.LoadCustomizations(__instance.Profile.Inventory, __instance.WeaponBuildsStorage).HandleExceptions();
         }
     }
 }

@@ -22,7 +22,7 @@ type CustomPosition = {
 };
 
 type CustomizePayload = {
-    weaponId: string;
+    id: string;
     slots: Record<string, CustomPosition>;
 };
 
@@ -68,9 +68,9 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
     private async saveCustomization(payload: CustomizePayload): Promise<string> {
         //this.logger.info(`WeaponCustomizer: Saving customization for weapon ${payload.weaponId}`);
         if (Object.keys(payload.slots).length === 0) {
-            delete this.customizations[payload.weaponId];
+            delete this.customizations[payload.id];
         } else {
-            this.customizations[payload.weaponId] = payload.slots;
+            this.customizations[payload.id] = payload.slots;
         }
         await this.save();
 
@@ -112,21 +112,28 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
                     map.set(item._id, true);
                 }
             }
+
+            const presets = profile.userbuilds?.weaponBuilds ?? [];
+            for (const preset of presets) {
+                if (map.has(preset.Id)) {
+                    map.set(preset.Id, true);
+                }
+            }
         }
 
         let dirtyCount = 0;
-        for (const [weaponId, found] of Object.entries(map)) {
+        for (const [id, found] of Object.entries(map)) {
             if (!found) {
-                delete this.customizations[weaponId];
+                delete this.customizations[id];
                 dirtyCount++;
             }
         }
 
         if (dirtyCount > 0) {
-            this.logger.logWithColor(
-                `WeaponCustomizer: Cleaned up ${dirtyCount} customizations for weapons that no longer exist`,
-                LogTextColor.CYAN
-            );
+            // this.logger.logWithColor(
+            //     `WeaponCustomizer: Cleaned up ${dirtyCount} customizations for weapons/presets that no longer exist`,
+            //     LogTextColor.CYAN
+            // );
 
             await this.save();
         }

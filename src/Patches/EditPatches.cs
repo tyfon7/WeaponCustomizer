@@ -1,11 +1,18 @@
+using Comfort.Common;
+using EFT;
 using EFT.InventoryLogic;
 using EFT.UI;
 using EFT.UI.WeaponModding;
 using HarmonyLib;
+using Newtonsoft.Json;
 using SPT.Reflection.Patching;
+using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using UnityEngine;
+using UnityEngine.Events;
 using UnityEngine.UI;
 
 namespace WeaponCustomizer;
@@ -34,10 +41,15 @@ public static class EditPatches
         "mod_tactical_001",
         "mod_tactical_002",
         "mod_tactical_003",
+        "mod_tactical_004",
         "mod_mount",
         "mod_mount_000",
         "mod_mount_001",
         "mod_mount_002",
+        "mod_mount_003",
+        "mod_mount_004",
+        "mod_mount_005",
+        "mod_mount_006",
         "mod_bipod"
     ];
 
@@ -47,6 +59,12 @@ public static class EditPatches
     {
         new BoneMoverPatch().Enable();
         new RevertButtonPatch().Enable();
+        new AssemblePatch().Enable();
+        new CheckIfAlreadyBuiltPatch().Enable();
+
+        new FindBuildPatch().Enable();
+        new SaveBuildPatch().Enable();
+        new RemoveBuildPatch().Enable();
     }
 
     public class BoneMoverPatch : ModulePatch
@@ -61,35 +79,39 @@ public static class EditPatches
 
         [PatchPostfix]
         public static void Postfix(
-            Image ____boneIcon,
-            Transform ___transform_0,
-            GInterface444 ___ginterface444_0,
-            CompoundItem ___compoundItem_0,
-            Slot ___slot_0)
+            Slot slot,
+            GInterface444 moddingScreen,
+            CompoundItem item,
+            Transform modBone,
+            Image ____boneIcon)
         {
-            if (!MovableMods.Contains(___transform_0.name) || ___compoundItem_0 is not Weapon weapon)
+            if (!MovableMods.Contains(modBone.name) || item is not Weapon weapon)
             {
                 return;
             }
 
-            UpdatePositionsMethod = AccessTools.Method(___ginterface444_0.GetType(), "UpdatePositions");
-            ViewporterField = AccessTools.Field(___ginterface444_0.GetType(), "_viewporter");
-            var viewporter = ViewporterField.GetValue(___ginterface444_0) as CameraViewporter;
+            UpdatePositionsMethod = AccessTools.Method(moddingScreen.GetType(), "UpdatePositions");
+            ViewporterField = AccessTools.Field(moddingScreen.GetType(), "_viewporter");
+            var viewporter = ViewporterField.GetValue(moddingScreen) as CameraViewporter;
 
             ____boneIcon.GetOrAddComponent<DraggableBone>().Init(
                 ____boneIcon,
-                ___transform_0,
+                modBone,
                 weapon,
-                ___slot_0.FullId,
+                slot.FullId,
                 viewporter,
                 (done) =>
                 {
-                    UpdatePositionsMethod.Invoke(___ginterface444_0, []);
+                    UpdatePositionsMethod.Invoke(moddingScreen, []);
                     if (done)
                     {
+                        EditBuildScreen editBuildScreen = moddingScreen as EditBuildScreen;
+                        editBuildScreen?.CheckForVitalParts();
+
                         if (weapon.IsCustomized(out _))
                         {
                             RevertButton.ShowGameObject();
+                            editBuildScreen?.method_34(); // Mark build as dirty
                         }
                         else
                         {
@@ -130,13 +152,7 @@ public static class EditPatches
             RevertButton.OnClick.RemoveAllListeners();
             if (item is Weapon weapon)
             {
-                RevertButton.OnClick.AddListener(() =>
-                {
-                    foreach (var bone in __instance.GetComponentsInChildren<DraggableBone>())
-                    {
-                        bone.Reset();
-                    }
-                });
+                RevertButton.OnClick.AddListener(OnClick(__instance));
 
                 if (weapon.IsCustomized(out _))
                 {
@@ -150,6 +166,133 @@ public static class EditPatches
             else
             {
                 RevertButton.HideGameObject();
+            }
+        }
+
+        private static UnityAction OnClick(MonoBehaviour screen)
+        {
+            return () =>
+            {
+                foreach (var bone in screen.GetComponentsInChildren<DraggableBone>())
+                {
+                    bone.Reset();
+                }
+            };
+        }
+    }
+
+    public class AssemblePatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(GClass3188), nameof(GClass3188.Assemble));
+        }
+
+        // itemBody is the real weapon, buildWeapon is the temporary preset being applied to the itemBody
+        [PatchPostfix]
+        public static async void Postfix(Weapon itemBody, Weapon buildWeapon, Task<bool> __result)
+        {
+            if (!await __result)
+            {
+                return;
+            }
+
+            buildWeapon.CopyCustomizations(itemBody);
+        }
+    }
+
+    public class CheckIfAlreadyBuiltPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.DeclaredMethod(typeof(GClass3188), nameof(GClass3188.CheckIfAlreadyBuilt));
+        }
+
+        [PatchPostfix]
+        public static void Postfix(IEnumerable<Item> installedMods, Weapon assemblingWeapon, ref bool __result)
+        {
+            if (!__result || !installedMods.Any())
+            {
+                return;
+            }
+
+            // Figure out the gun body
+            Item mod = installedMods.First();
+            if (mod.GetRootMergedItem() is not Weapon itemBody)
+            {
+                Plugin.Instance.Logger.LogError("CheckIfAlreadyBuiltPatch failed to get weapon from mod list!");
+                return;
+            }
+
+            __result = itemBody.CustomizationsMatch(assemblingWeapon);
+        }
+    }
+
+    // FindBuild looks for matching item templates. Assert that the customizations match too.
+    // This means you can't have multiple builds with the same mods but different customizations.
+    public class FindBuildPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(WeaponBuildsStorageClass), nameof(WeaponBuildsStorageClass.FindBuild));
+        }
+
+        [PatchPostfix]
+        public static void Postfix(Item item, ref Preset __result)
+        {
+            if (__result == null || item is not Weapon weapon)
+            {
+                return;
+            }
+
+            if (weapon.CustomizationsMatch(__result))
+            {
+                return;
+            }
+
+            __result = null;
+            return;
+        }
+    }
+
+    public class SaveBuildPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(WeaponBuildsStorageClass), nameof(WeaponBuildsStorageClass.SaveBuild));
+        }
+
+        [PatchPostfix]
+        public static void Postfix(Preset build)
+        {
+            if (build.Item is not Weapon weapon)
+            {
+                return;
+            }
+
+            weapon.SaveAsPreset(build);
+        }
+    }
+
+    public class RemoveBuildPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(WeaponBuildsStorageClass), nameof(WeaponBuildsStorageClass.RemoveBuild));
+        }
+
+        [PatchPrefix]
+        public static void Prefix(WeaponBuildsStorageClass __instance, MongoID buildId, ref Preset __state)
+        {
+            __instance.Dictionary_0.TryGetValue(buildId, out __state);
+        }
+
+        [PatchPostfix]
+        public static async void Postfix(Task<IResult> __result, Preset __state)
+        {
+            if (__state != null && (await __result).Succeed)
+            {
+                __state.RemoveCustomizations();
             }
         }
     }

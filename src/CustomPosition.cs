@@ -14,4 +14,9 @@ public struct CustomPosition
         hash *= 31 + Position.GetHashCode();
         return hash;
     }
+
+    public override bool Equals(object other)
+    {
+        return other is CustomPosition customPosition && this.GetHashCode() == customPosition.GetHashCode();
+    }
 }

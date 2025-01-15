@@ -63,10 +63,19 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
     public postSptLoad(container: DependencyContainer): void {
         this.profileHelper = container.resolve<ProfileHelper>("ProfileHelper");
         this.clean();
+
+        const count = Object.keys(this.customizations).length;
+        if (count > 0) {
+            this.logger.logWithColor(`WeaponCustomizer: ${count} weapon customizations loaded`, LogTextColor.CYAN);
+        }
     }
 
     private async saveCustomization(payload: CustomizePayload): Promise<string> {
         //this.logger.info(`WeaponCustomizer: Saving customization for weapon ${payload.weaponId}`);
+        if (!payload || !payload.id) {
+            this.logger.error("WeaponCustomizer: Bad save payload!");
+            return;
+        }
         if (Object.keys(payload.slots).length === 0) {
             delete this.customizations[payload.id];
         } else {
@@ -87,13 +96,8 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
                 // Create the file with fs - vfs.writeFile pukes on windows paths if it needs to create the file
                 fs.writeFileSync(this.filepath, JSON.stringify(this.customizations));
             }
-
-            const count = Object.keys(this.customizations).length;
-            if (count > 0) {
-                this.logger.logWithColor(`WeaponCustomizer: ${count} weapon customizations loaded.`, LogTextColor.CYAN);
-            }
         } catch (error) {
-            this.logger.error("WeaponCustomizer: Failed to load weapon customization! " + error);
+            this.logger.error("WeaponCustomizer: Failed to load weapon customizations! " + error);
             this.customizations = {};
         }
     }
@@ -143,7 +147,7 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
         try {
             await this.vfs.writeFileAsync(this.filepath, JSON.stringify(this.customizations, null, 2));
         } catch (error) {
-            this.logger.error("WeaponCustomizer: Failed to save weapon customization! " + error);
+            this.logger.error("WeaponCustomizer: Failed to save weapon customizations! " + error);
         }
     }
 }

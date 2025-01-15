@@ -16,6 +16,21 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <DeployTarget Include="Default">
+      <Path>$(ProjectDir)$(SPTPath)</Path>
+    </DeployTarget>
+    <DeployTarget Include="Release" Condition="'$(Configuration)'=='Release'">
+      <Path>$(ProjectDir)dist</Path>
+    </DeployTarget>
+    <DeployTarget Include="Fika1">
+      <Path>d:\fika</Path>
+    </DeployTarget>
+    <DeployTarget Include="Fika2">
+      <Path>d:\fika2</Path>
+    </DeployTarget>
+  </ItemGroup>
+
+  <ItemGroup>
     <Reference Include="spt-common">
       <HintPath>$(SPTPath)\BepInEx\plugins\spt\spt-common.dll</HintPath>
     </Reference>
@@ -82,16 +97,20 @@
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec
-      Command='if $(ConfigurationName) == Debug (
-        xcopy /F /Y "$(TargetPath)" "$(ProjectDir)$(SPTPath)\BepInEx\plugins\"
-        xcopy /F /Y "$(ProjectDir)$(OutDir)$(TargetName).pdb" "$(ProjectDir)$(SPTPath)\BepInEx\plugins\"
-      )
-      if $(ConfigurationName) == Release (
-        mkdir "$(ProjectDir)dist\BepInEx\plugins"
-        xcopy /F /Y "$(TargetPath)" "$(ProjectDir)dist\BepInEx\plugins\"
-        xcopy /F /Y /S "$(ProjectDir)dist\BepInEx" "$(ProjectDir)$(SPTPath)\BepInEx"
-        xcopy /F /Y /S "$(ProjectDir)dist\user" "$(ProjectDir)$(SPTPath)\user"
-        7z a -tzip dist\$(TargetName.Replace(".", "-"))-$(Version).zip $(ProjectDir)dist\BepInEx $(ProjectDir)dist\user
-      )' />
+      Command='
+        if $(ConfigurationName) == Release (
+          mkdir "$(ProjectDir)dist\BepInEx\plugins"
+        )
+
+        xcopy /F /Y "$(TargetPath)" "%(DeployTarget.Path)\BepInEx\plugins\"
+
+        if $(ConfigurationName) == Debug (
+          xcopy /F /Y "$(ProjectDir)$(OutDir)$(TargetName).pdb" "%(DeployTarget.Path)\BepInEx\plugins\"
+        )
+        
+        if $(ConfigurationName) == Release (
+          7z a -tzip dist\$(TargetName.Replace(".", "-"))-$(Version).zip $(SolutionDir)dist\BepInEx $(SolutionDir)dist\user
+        )'
+    />
   </Target>
 </Project>

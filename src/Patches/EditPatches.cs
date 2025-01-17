@@ -54,14 +54,18 @@ public static class EditPatches
     ];
 
     private static DefaultUIButton RevertButton;
+    private static FieldInfo PresetField;
 
     public static void Enable()
     {
+        PresetField = AccessTools.GetDeclaredFields(typeof(EditBuildScreen)).Single(f => f.FieldType == typeof(Preset));
+
         new BoneMoverPatch().Enable();
         new RevertButtonPatch().Enable();
         new AssemblePatch().Enable();
         new CheckIfAlreadyBuiltPatch().Enable();
 
+        new LoadBuildPatch().Enable();
         new FindBuildPatch().Enable();
         new SaveBuildPatch().Enable();
         new RemoveBuildPatch().Enable();
@@ -106,16 +110,20 @@ public static class EditPatches
                     if (done)
                     {
                         EditBuildScreen editBuildScreen = moddingScreen as EditBuildScreen;
-                        editBuildScreen?.CheckForVitalParts();
+                        editBuildScreen?.CheckForVitalParts(); // Triggers assemble button
 
                         if (weapon.IsCustomized(out _))
                         {
                             RevertButton.ShowGameObject();
-                            editBuildScreen?.method_34(); // Mark build as dirty
                         }
                         else
                         {
                             RevertButton.HideGameObject();
+                        }
+
+                        if (editBuildScreen != null && !weapon.CustomizationsMatch(PresetField.GetValue(editBuildScreen) as Preset))
+                        {
+                            editBuildScreen.method_34(); // Mark build as dirty
                         }
                     }
                 });
@@ -126,11 +134,11 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.DeclaredMethod(typeof(WeaponModdingScreen).BaseType, nameof(WeaponModdingScreen.Show));
+            return AccessTools.DeclaredMethod(typeof(WeaponModdingScreen).BaseType, nameof(WeaponModdingScreen.UpdateItem));
         }
 
         [PatchPostfix]
-        public static void Postfix(MonoBehaviour __instance, Item item, DefaultUIButton ____backButton)
+        public static void Postfix(MonoBehaviour __instance, Item newItem, DefaultUIButton ____backButton)
         {
             var foundTransform = __instance.transform.Find("RevertButton");
             if (foundTransform != null)
@@ -150,7 +158,7 @@ public static class EditPatches
             }
 
             RevertButton.OnClick.RemoveAllListeners();
-            if (item is Weapon weapon)
+            if (newItem is Weapon weapon)
             {
                 RevertButton.OnClick.AddListener(OnClick(__instance));
 
@@ -225,6 +233,31 @@ public static class EditPatches
             }
 
             __result = itemBody.CustomizationsMatch(assemblingWeapon);
+        }
+    }
+
+    public class LoadBuildPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.DeclaredMethod(typeof(EditBuildScreen), nameof(EditBuildScreen.UpdateItem));
+        }
+
+        [PatchPrefix]
+        public static void Prefix(EditBuildScreen __instance, Item newItem)
+        {
+            if (newItem is not Weapon weapon)
+            {
+                return;
+            }
+
+            var preset = PresetField.GetValue(__instance) as Preset;
+            if (preset == null)
+            {
+                return;
+            }
+
+            preset.ApplyCustomizations(weapon);
         }
     }
 

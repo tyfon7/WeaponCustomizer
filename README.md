@@ -6,9 +6,13 @@ This SPTarkov mod allows you to adjust the positions of some of your weapon atta
 
 Modify a gun with the context menu -> Modding screen, and you will be able to click and drag the white dot on each attachment. If it changes color, it's adjustable. If not, it's not.
 
-You can reset an attachment to its default position by right clicking the dot.
+You can reset an attachment to its default position by right clicking the dot, or reset all attachments by clicking "Revert" in the upper right corner.
 
 Note that there is nothing currently enforcing the laws of physics - you can drag attachments into space, or inside of other attachments, and they will stay there. The only way to solve this would be an exhaustive list of every attachement's dimensions (which wouldn't support extra mod content), or a very complicated and likely wrong on-the-fly analysis of where items can be moved to. Use your own judgement.
+
+## Presets
+
+Adjustments can be saved as part of a preset. Changes are treated the same as any other preset change - they do not apply to the weapon until you click "Assemble", and they do not save until you press "Save".
 
 ## Supported attachments
 

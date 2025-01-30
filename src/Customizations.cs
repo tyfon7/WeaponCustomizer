@@ -270,21 +270,24 @@ public static class Customizations
             }
         }
 
-        foreach (Preset preset in weaponBuilds.Dictionary_0.Values)
+        if (weaponBuilds != null)
         {
-            if (customizations.TryGetValue(preset.Id, out Dictionary<string, CustomPositionJson> slots))
+            foreach (Preset preset in weaponBuilds.Dictionary_0.Values)
             {
-                var customPositions = PresetCustomizations.GetOrCreateValue(preset);
-                customPositions.Clear();
-
-                foreach (var (slotId, customPosition) in slots)
+                if (customizations.TryGetValue(preset.Id, out Dictionary<string, CustomPositionJson> slots))
                 {
-                    customPositions[slotId] = customPosition;
-                }
+                    var customPositions = PresetCustomizations.GetOrCreateValue(preset);
+                    customPositions.Clear();
 
-                if (preset.Item is Weapon weapon)
-                {
-                    preset.ApplyCustomizations(weapon);
+                    foreach (var (slotId, customPosition) in slots)
+                    {
+                        customPositions[slotId] = customPosition;
+                    }
+
+                    if (preset.Item is Weapon weapon)
+                    {
+                        preset.ApplyCustomizations(weapon);
+                    }
                 }
             }
         }

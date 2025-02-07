@@ -1,16 +1,14 @@
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
 using Comfort.Common;
 using EFT;
 using EFT.InventoryLogic;
 using EFT.UI;
 using EFT.UI.WeaponModding;
 using HarmonyLib;
-using Newtonsoft.Json;
 using SPT.Reflection.Patching;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Threading.Tasks;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -112,7 +110,7 @@ public static class EditPatches
                         EditBuildScreen editBuildScreen = moddingScreen as EditBuildScreen;
                         editBuildScreen?.CheckForVitalParts(); // Triggers assemble button
 
-                        if (weapon.IsCustomized(out _))
+                        if (weapon.IsCustomized())
                         {
                             RevertButton.ShowGameObject();
                         }
@@ -162,7 +160,7 @@ public static class EditPatches
             {
                 RevertButton.OnClick.AddListener(OnClick(__instance));
 
-                if (weapon.IsCustomized(out _))
+                if (weapon.IsCustomized())
                 {
                     RevertButton.ShowGameObject();
                 }

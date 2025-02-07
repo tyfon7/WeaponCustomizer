@@ -1,11 +1,11 @@
-using EFT.InventoryLogic;
-using Newtonsoft.Json;
-using SPT.Common.Http;
-using SPT.Reflection.Utils;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
+using EFT.InventoryLogic;
+using Newtonsoft.Json;
+using SPT.Common.Http;
+using SPT.Reflection.Utils;
 using UnityEngine;
 
 namespace WeaponCustomizer;
@@ -14,6 +14,11 @@ public static class Customizations
 {
     private static readonly ConditionalWeakTable<Weapon, Dictionary<string, CustomPosition>> WeaponCustomizations = new();
     private static readonly ConditionalWeakTable<Preset, Dictionary<string, CustomPosition>> PresetCustomizations = new();
+
+    public static bool IsCustomized(this Weapon weapon)
+    {
+        return weapon.IsCustomized(out _);
+    }
 
     public static bool IsCustomized(this Weapon weapon, out Dictionary<string, CustomPosition> slots)
     {

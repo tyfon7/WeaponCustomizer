@@ -12,6 +12,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     private const float MOVE_DISTANCE = 0.5f;
     private Image boneIcon;
     private Transform mod;
+    private CustomizedMod customizedMod;
     private Weapon weapon;
     private string slotId;
     private CameraViewporter viewporter;
@@ -38,10 +39,13 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         this.viewporter = viewporter;
         this.onChange = onChange;
 
-        originalLocalPosition = mod.localPosition;
         if (weapon.IsCustomized(slotId, out CustomPosition customPosition))
         {
             originalLocalPosition = customPosition.OriginalPosition;
+        }
+        else
+        {
+            originalLocalPosition = mod.localPosition;
         }
 
         // These bones get reinitialized when attachments are added, so we can't assume the gun is straight. The rotator has the rotation
@@ -89,7 +93,12 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
 
     public void Reset()
     {
-        mod.localPosition = originalLocalPosition;
+        var customizedMod = mod.GetComponent<CustomizedMod>();
+        if (customizedMod != null)
+        {
+            Destroy(customizedMod);
+        }
+
         weapon.ResetCustomization(slotId);
 
         onChange(true);
@@ -106,6 +115,13 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
 
         dragging = true;
         SetColor();
+
+        customizedMod = mod.GetComponent<CustomizedMod>();
+        if (customizedMod == null)
+        {
+            customizedMod = mod.gameObject.AddComponent<CustomizedMod>();
+            customizedMod.Init(originalLocalPosition, mod.localPosition);
+        }
 
         dragOffset = eventData.position - (Vector2)viewporter.TargetCamera.WorldToScreenPoint(mod.position);
 
@@ -128,9 +144,9 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         Vector2 screenPosition = Vector2.Max(minScreen, Vector2.Min(maxScreen, eventData.position - dragOffset));
         float percentDelta = Vector2.Distance(minScreen, screenPosition) / Vector2.Distance(minScreen, maxScreen);
 
-        mod.localPosition = reversed ?
+        customizedMod.Move(reversed ?
             Vector3.MoveTowards(maxLocalPosition, minLocalPosition, percentDelta * maxDistance) :
-            Vector3.MoveTowards(minLocalPosition, maxLocalPosition, percentDelta * maxDistance);
+            Vector3.MoveTowards(minLocalPosition, maxLocalPosition, percentDelta * maxDistance));
 
         onChange(false);
     }
@@ -140,7 +156,8 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         dragging = false;
         SetColor();
 
-        weapon.SetCustomization(slotId, new() { OriginalPosition = originalLocalPosition, Position = mod.localPosition });
+        weapon.SetCustomization(slotId, customizedMod.Customization);
+
         onChange(true);
     }
 }

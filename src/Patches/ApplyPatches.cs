@@ -1,8 +1,10 @@
+using System.Collections.Generic;
+using System.Reflection;
+using System.Threading.Tasks;
 using EFT.InventoryLogic;
 using HarmonyLib;
 using SPT.Reflection.Patching;
-using System.Collections.Generic;
-using System.Reflection;
+using UnityEngine;
 
 namespace WeaponCustomizer;
 
@@ -11,6 +13,7 @@ public static class ApplyPatches
     public static void Enable()
     {
         new InsertModPatch().Enable();
+        new CreateItemPatch().Enable();
         new IconPatch().Enable();
     }
 
@@ -31,8 +34,30 @@ public static class ApplyPatches
 
             if (weapon.IsCustomized(parentSlot.FullId, out CustomPosition customPosition))
             {
-                //Logger.LogInfo($"WC: Updating {__instance.Bone.name} localPosition from ({__instance.Bone.localPosition.x}, {__instance.Bone.localPosition.y}, {__instance.Bone.localPosition.z}) to ({customPosition.Position.x}, {customPosition.Position.y}, {customPosition.Position.z})");
-                __instance.Bone.localPosition = customPosition.Position;
+                __instance.Bone.gameObject.GetOrAddComponent<CustomizedMod>().Init(customPosition);
+            }
+        }
+    }
+
+    // In some cases (creating the icon), the model is created and snapshotted before CustomizedMod can fix the positions
+    // Force it to apply early here
+    public class CreateItemPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(PoolManager), nameof(PoolManager.CreateItemAsync));
+        }
+
+        [PatchPostfix]
+        public static async void Postfix(Item item, Task<GameObject> __result)
+        {
+            if (item is Weapon weapon && weapon.IsCustomized())
+            {
+                GameObject root = await __result;
+                foreach (var customizedMod in root.GetComponentsInChildren<CustomizedMod>())
+                {
+                    customizedMod.LateUpdate();
+                }
             }
         }
     }

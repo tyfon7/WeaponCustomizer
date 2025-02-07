@@ -2,10 +2,10 @@ using UnityEngine;
 
 namespace WeaponCustomizer;
 
-public struct CustomPosition
+public struct CustomPosition(Vector3 originalPosition, Vector3 position)
 {
-    public Vector3 OriginalPosition;
-    public Vector3 Position;
+    public Vector3 OriginalPosition = originalPosition;
+    public Vector3 Position = position;
 
     public override int GetHashCode()
     {

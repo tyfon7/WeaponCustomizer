@@ -14,6 +14,13 @@ Note that there is nothing currently enforcing the laws of physics - you can dra
 
 Adjustments can be saved as part of a preset. Changes are treated the same as any other preset change - they do not apply to the weapon until you click "Assemble", and they do not save until you press "Save".
 
+## Configuration Options
+
+These options are available in the F12 menu.
+
+-   Step Size: Instead of smooth motion, you can force attachments to move in discreet pixel amounts. Note that this is screen pixels, so rotation affects this.
+-   Move Everything: Allows you to move every gun part, including ones that don't make any sense at all. Have fun.
+
 ## Supported attachments
 
 ### Foregrips

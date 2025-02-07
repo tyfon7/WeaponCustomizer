@@ -1,8 +1,11 @@
+using System;
+using System.Linq;
+using System.Reflection;
 using EFT.InventoryLogic;
 using EFT.UI;
 using HarmonyLib;
 using SPT.Reflection.Patching;
-using System.Reflection;
+using SPT.Reflection.Utils;
 
 namespace WeaponCustomizer;
 
@@ -18,7 +21,12 @@ public static class ClonePatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(GClass3105), nameof(GClass3105.smethod_2)).MakeGenericMethod([typeof(Item)]);
+            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("IncompatibleByMalfunction") != null); // GClass3105
+            return type.GetMethods(BindingFlags.Public | BindingFlags.Static).Single(m =>
+            {
+                var parameters = m.GetParameters();
+                return parameters[0].Name == "originalItem" && parameters.Length > 2;
+            }).MakeGenericMethod([typeof(Item)]);
         }
 
         [PatchPostfix]

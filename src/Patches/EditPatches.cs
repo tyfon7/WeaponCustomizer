@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,6 +10,7 @@ using EFT.UI;
 using EFT.UI.WeaponModding;
 using HarmonyLib;
 using SPT.Reflection.Patching;
+using SPT.Reflection.Utils;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UI;
@@ -191,7 +193,8 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(GClass3188), nameof(GClass3188.Assemble));
+            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("Assemble") != null); // GClass3188
+            return AccessTools.Method(type, "Assemble");
         }
 
         // itemBody is the real weapon, buildWeapon is the temporary preset being applied to the itemBody
@@ -211,7 +214,8 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.DeclaredMethod(typeof(GClass3188), nameof(GClass3188.CheckIfAlreadyBuilt));
+            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("CheckIfAlreadyBuilt") != null); // GClass3188
+            return AccessTools.Method(type, "CheckIfAlreadyBuilt");
         }
 
         [PatchPostfix]

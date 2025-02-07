@@ -1,9 +1,13 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using EFT;
 using EFT.InventoryLogic;
 using HarmonyLib;
 using SPT.Reflection.Patching;
+using SPT.Reflection.Utils;
 using UnityEngine;
 
 namespace WeaponCustomizer;
@@ -21,20 +25,24 @@ public static class ApplyPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(GClass735.GClass736), nameof(GClass735.GClass736.InsertItem));
+            // GClass735.GClass736
+            Type ccvType = AccessTools.Field(typeof(Player.FirearmController), nameof(Player.FirearmController.CCV)).FieldType;
+            Type type = AccessTools.Field(ccvType, nameof(Player.FirearmController.CCV.ContainerBones)).FieldType.GenericTypeArguments[1];
+
+            return AccessTools.Method(type, "InsertItem");
         }
 
         [PatchPostfix]
-        public static void Postfix(GClass735.GClass736 __instance)
+        public static void Postfix(Item item, Transform ___Bone)
         {
-            if (__instance.Item.GetRootItemNotEquipment() is not Weapon weapon || __instance.Item.Parent.Container is not Slot parentSlot)
+            if (item.GetRootItemNotEquipment() is not Weapon weapon || item.Parent.Container is not Slot parentSlot)
             {
                 return;
             }
 
             if (weapon.IsCustomized(parentSlot.FullId, out CustomPosition customPosition))
             {
-                __instance.Bone.gameObject.GetOrAddComponent<CustomizedMod>().Init(customPosition);
+                ___Bone.gameObject.GetOrAddComponent<CustomizedMod>().Init(customPosition);
             }
         }
     }
@@ -67,7 +75,8 @@ public static class ApplyPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(GClass896), nameof(GClass896.GetItemHash));
+            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("GetItemHash") != null); // GClass896
+            return AccessTools.Method(type, "GetItemHash");
         }
 
         [PatchPostfix]

@@ -14,6 +14,8 @@ public class Plugin : BaseUnityPlugin
     {
         Instance = this;
 
+        Settings.Init(Config);
+
         LoadPatches.Enable();
         EditPatches.Enable();
         ClonePatches.Enable();

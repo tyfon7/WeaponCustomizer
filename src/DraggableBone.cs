@@ -142,7 +142,14 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     {
         // Clamp the mouse position between the screen points
         Vector2 screenPosition = Vector2.Max(minScreen, Vector2.Min(maxScreen, eventData.position - dragOffset));
-        float percentDelta = Vector2.Distance(minScreen, screenPosition) / Vector2.Distance(minScreen, maxScreen);
+        var distance = Vector2.Distance(minScreen, screenPosition);
+        if (Settings.StepSize.Value > 0)
+        {
+            var factor = Mathf.RoundToInt(distance / Settings.StepSize.Value);
+            distance = factor * Settings.StepSize.Value;
+        }
+
+        float percentDelta = distance / Vector2.Distance(minScreen, maxScreen);
 
         customizedMod.Move(reversed ?
             Vector3.MoveTowards(maxLocalPosition, minLocalPosition, percentDelta * maxDistance) :

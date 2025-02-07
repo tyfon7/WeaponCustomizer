@@ -89,7 +89,7 @@ public static class EditPatches
             Transform modBone,
             Image ____boneIcon)
         {
-            if (!MovableMods.Contains(modBone.name) || item is not Weapon weapon)
+            if (item is not Weapon weapon || (!Settings.MoveEverything.Value && !MovableMods.Contains(modBone.name)))
             {
                 return;
             }

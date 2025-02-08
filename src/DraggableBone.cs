@@ -96,6 +96,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         var customizedMod = mod.GetComponent<CustomizedMod>();
         if (customizedMod != null)
         {
+            customizedMod.Reset();
             Destroy(customizedMod);
         }
 

@@ -24,6 +24,11 @@ public class CustomizedMod : MonoBehaviour
         transform.localPosition = position;
     }
 
+    public void Reset()
+    {
+        Move(Customization.OriginalPosition);
+    }
+
     public void LateUpdate()
     {
         transform.localPosition = Customization.Position;

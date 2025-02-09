@@ -1,10 +1,12 @@
+using System;
+using System.Linq;
+using System.Reflection;
+using System.Threading.Tasks;
 using Comfort.Common;
 using EFT;
 using HarmonyLib;
 using SPT.Reflection.Patching;
 using SPT.Reflection.Utils;
-using System.Reflection;
-using System.Threading.Tasks;
 
 namespace WeaponCustomizer;
 
@@ -14,20 +16,25 @@ public static class LoadPatches
     {
         new MenuLoadPatch().Enable();
         new OtherInventoryLoadPatch().Enable();
+        new InsuranceMessageReceivedPatch().Enable();
     }
 
     public class MenuLoadPatch : ModulePatch
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(Class301), nameof(Class301.RequestBuilds));
+            Type type = PatchConstants.EftTypes.Single(
+                t => !t.IsAbstract &&
+                typeof(ProfileEndpointFactoryAbstractClass).IsAssignableFrom(t) &&
+                t.GetMethod("RequestBuilds") != null);
+            return AccessTools.Method(type, "RequestBuilds");
         }
 
         [PatchPostfix]
-        public static async void Postfix(ISession __instance, Task<IResult> __result)
+        public static async void Postfix(Task<IResult> __result)
         {
             await __result;
-            Customizations.LoadCustomizations(__instance.Profile.Inventory, __instance.WeaponBuildsStorage).HandleExceptions();
+            Customizations.LoadCustomizations().HandleExceptions();
         }
     }
 
@@ -47,7 +54,25 @@ public static class LoadPatches
                 return;
             }
 
-            Customizations.LoadCustomizations(profile.Inventory, null).HandleExceptions();
+            Customizations.LoadCustomizations().HandleExceptions();
+        }
+    }
+
+    // Reload customizations after insurance return, because some of the items might have changed IDs
+    public class InsuranceMessageReceivedPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(SocialNetworkClass), nameof(SocialNetworkClass.method_7));
+        }
+
+        [PatchPostfix]
+        public static void Postfix(ChatMessageClass message)
+        {
+            if (message.HasRewards && message.Type == ChatShared.EMessageType.InsuranceReturn)
+            {
+                Customizations.LoadCustomizations().HandleExceptions();
+            }
         }
     }
 }

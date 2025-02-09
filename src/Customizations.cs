@@ -1,19 +1,16 @@
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using EFT.InventoryLogic;
 using Newtonsoft.Json;
 using SPT.Common.Http;
 using SPT.Reflection.Utils;
-using UnityEngine;
 
 namespace WeaponCustomizer;
 
 public static class Customizations
 {
-    private static readonly ConditionalWeakTable<Weapon, Dictionary<string, CustomPosition>> WeaponCustomizations = new();
-    private static readonly ConditionalWeakTable<Preset, Dictionary<string, CustomPosition>> PresetCustomizations = new();
+    private static readonly Dictionary<string, Dictionary<string, CustomPosition>> AllCustomizations = [];
 
     public static bool IsCustomized(this Weapon weapon)
     {
@@ -22,7 +19,7 @@ public static class Customizations
 
     public static bool IsCustomized(this Weapon weapon, out Dictionary<string, CustomPosition> slots)
     {
-        if (WeaponCustomizations.TryGetValue(weapon, out slots))
+        if (AllCustomizations.TryGetValue(weapon.Id, out slots))
         {
             return slots.Count > 0;
         }
@@ -32,7 +29,7 @@ public static class Customizations
 
     public static bool IsCustomized(this Preset preset, out Dictionary<string, CustomPosition> slots)
     {
-        if (PresetCustomizations.TryGetValue(preset, out slots))
+        if (AllCustomizations.TryGetValue(preset.Id, out slots))
         {
             return slots.Count > 0;
         }
@@ -42,7 +39,7 @@ public static class Customizations
 
     public static bool IsCustomized(this Weapon weapon, string slotId, out CustomPosition customPosition)
     {
-        if (WeaponCustomizations.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots) &&
+        if (AllCustomizations.TryGetValue(weapon.Id, out var slots) &&
             slots.TryGetValue(slotId, out customPosition))
         {
             return true;
@@ -54,7 +51,7 @@ public static class Customizations
 
     public static bool IsCustomized(this Preset preset, string slotId, out CustomPosition customPosition)
     {
-        if (PresetCustomizations.TryGetValue(preset, out Dictionary<string, CustomPosition> slots) &&
+        if (AllCustomizations.TryGetValue(preset.Id, out var slots) &&
             slots.TryGetValue(slotId, out customPosition))
         {
             return true;
@@ -66,7 +63,11 @@ public static class Customizations
 
     public static void SetCustomization(this Weapon weapon, string slotId, CustomPosition customPosition)
     {
-        var slots = WeaponCustomizations.GetOrCreateValue(weapon);
+        if (!AllCustomizations.TryGetValue(weapon.Id, out var slots))
+        {
+            slots = AllCustomizations[weapon.Id] = [];
+        }
+
         slots[slotId] = customPosition;
 
         // Only save the actual guns, not copies in the edit build screen
@@ -79,10 +80,10 @@ public static class Customizations
     public static void ResetCustomizations(this Weapon weapon)
     {
         // Clear the dictionary first, don't just remove it - clones still will have copies
-        if (WeaponCustomizations.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
+        if (AllCustomizations.TryGetValue(weapon.Id, out var slots))
         {
             slots.Clear();
-            WeaponCustomizations.Remove(weapon);
+            AllCustomizations.Remove(weapon.Id);
 
             // Only save the actual guns, not copies in the edit build screen
             if (weapon.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
@@ -94,12 +95,12 @@ public static class Customizations
 
     public static void ResetCustomization(this Weapon weapon, string slotId)
     {
-        if (WeaponCustomizations.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
+        if (AllCustomizations.TryGetValue(weapon.Id, out var slots))
         {
             slots.Remove(slotId);
             if (slots.Count == 0)
             {
-                WeaponCustomizations.Remove(weapon);
+                AllCustomizations.Remove(weapon.Id);
                 slots = null;
             }
 
@@ -114,10 +115,17 @@ public static class Customizations
     // This is called by the clone patch, for icon generation, and also the modding screens
     public static void ShareCustomizations(this Weapon weapon, Weapon to)
     {
-        WeaponCustomizations.Remove(to);
-        if (WeaponCustomizations.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
+        if (weapon.Id == to.Id)
         {
-            WeaponCustomizations.Add(to, slots);
+            // CloneWithSameId causes this, no need to do anything
+            return;
+        }
+
+        AllCustomizations.Remove(to.Id);
+        if (AllCustomizations.TryGetValue(weapon.Id, out var slots))
+        {
+            // Multiple weapons now pointing to the same dictionary
+            AllCustomizations.Add(to.Id, slots);
         }
 
         // Only save the actual guns, not copies in the edit build screen
@@ -130,19 +138,25 @@ public static class Customizations
     // Used by the edit screen, to create a separate setting that will not automatically reflect back onto the original
     public static void UnshareCustomizations(this Weapon weapon)
     {
-        if (WeaponCustomizations.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
+        if (AllCustomizations.TryGetValue(weapon.Id, out var slots))
         {
-            WeaponCustomizations.Remove(weapon);
-            WeaponCustomizations.Add(weapon, new Dictionary<string, CustomPosition>(slots));
+            // Clone old values, disconnecting it from any others (who are unaffected)
+            AllCustomizations[weapon.Id] = new(slots);
         }
     }
 
     public static void CopyCustomizations(this Weapon weapon, Weapon to)
     {
-        WeaponCustomizations.Remove(to);
-        if (WeaponCustomizations.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
+        if (weapon.Id == to.Id)
         {
-            WeaponCustomizations.Add(to, new Dictionary<string, CustomPosition>(slots));
+            return;
+        }
+
+        AllCustomizations.Remove(to.Id);
+        if (AllCustomizations.TryGetValue(weapon.Id, out var slots))
+        {
+            // Clone
+            AllCustomizations.Add(to.Id, new(slots));
         }
 
         // Only save the actual guns, not copies in the edit build screen
@@ -154,10 +168,11 @@ public static class Customizations
 
     public static void ApplyCustomizations(this Preset preset, Weapon to)
     {
-        WeaponCustomizations.Remove(to);
-        if (PresetCustomizations.TryGetValue(preset, out Dictionary<string, CustomPosition> slots))
+        AllCustomizations.Remove(to.Id);
+        if (AllCustomizations.TryGetValue(preset.Id, out var slots))
         {
-            WeaponCustomizations.Add(to, new Dictionary<string, CustomPosition>(slots));
+            // Clone
+            AllCustomizations.Add(to.Id, new(slots));
         }
 
         // Only save the actual guns, not copies in the edit build screen
@@ -169,10 +184,11 @@ public static class Customizations
 
     public static void SaveAsPreset(this Weapon weapon, Preset preset)
     {
-        PresetCustomizations.Remove(preset);
-        if (WeaponCustomizations.TryGetValue(weapon, out Dictionary<string, CustomPosition> slots))
+        AllCustomizations.Remove(preset.Id);
+        if (AllCustomizations.TryGetValue(weapon.Id, out var slots))
         {
-            PresetCustomizations.Add(preset, new Dictionary<string, CustomPosition>(slots));
+            // Clone
+            AllCustomizations.Add(preset.Id, new(slots));
         }
 
         SaveCustomizations(preset.Id, slots);
@@ -180,7 +196,7 @@ public static class Customizations
 
     public static void RemoveCustomizations(this Preset preset)
     {
-        if (PresetCustomizations.Remove(preset))
+        if (AllCustomizations.Remove(preset.Id))
         {
             SaveCustomizations(preset.Id, null);
         }
@@ -251,49 +267,17 @@ public static class Customizations
         RequestHandler.PutJsonAsync("/weaponcustomizer/save", JsonConvert.SerializeObject(payload));
     }
 
-    public static async Task LoadCustomizations(Inventory inventory, WeaponBuildsStorageClass weaponBuilds)
+    public static async Task LoadCustomizations()
     {
         string payload = await RequestHandler.GetJsonAsync("/weaponcustomizer/load");
         var customizations = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, CustomPositionJson>>>(payload);
 
-        foreach (Item item in inventory.GetPlayerItems(EPlayerItems.NonQuestItems))
+        foreach (var (id, slots) in customizations)
         {
-            if (item is not Weapon weapon)
+            var customPositions = AllCustomizations[id] = [];
+            foreach (var (slotId, customPosition) in slots)
             {
-                continue;
-            }
-
-            if (customizations.TryGetValue(weapon.Id, out Dictionary<string, CustomPositionJson> slots))
-            {
-                var customPositions = WeaponCustomizations.GetOrCreateValue(weapon);
-                customPositions.Clear();
-
-                foreach (var (slotId, customPosition) in slots)
-                {
-                    customPositions[slotId] = customPosition;
-                }
-            }
-        }
-
-        if (weaponBuilds != null)
-        {
-            foreach (Preset preset in weaponBuilds.Dictionary_0.Values)
-            {
-                if (customizations.TryGetValue(preset.Id, out Dictionary<string, CustomPositionJson> slots))
-                {
-                    var customPositions = PresetCustomizations.GetOrCreateValue(preset);
-                    customPositions.Clear();
-
-                    foreach (var (slotId, customPosition) in slots)
-                    {
-                        customPositions[slotId] = customPosition;
-                    }
-
-                    if (preset.Item is Weapon weapon)
-                    {
-                        preset.ApplyCustomizations(weapon);
-                    }
-                }
+                customPositions[slotId] = customPosition;
             }
         }
     }
@@ -302,24 +286,5 @@ public static class Customizations
     {
         public string id;
         public Dictionary<string, CustomPositionJson> slots;
-    }
-
-    private struct CustomPositionJson
-    {
-        public Vector3Json position;
-        public Vector3Json original;
-
-        public static implicit operator CustomPositionJson(CustomPosition c) => new() { position = c.Position, original = c.OriginalPosition };
-        public static implicit operator CustomPosition(CustomPositionJson c) => new() { OriginalPosition = c.original, Position = c.position };
-    }
-
-    private struct Vector3Json
-    {
-        public float x;
-        public float y;
-        public float z;
-
-        public static implicit operator Vector3Json(Vector3 v) => new() { x = v.x, y = v.y, z = v.z };
-        public static implicit operator Vector3(Vector3Json v) => new(v.x, v.y, v.z);
     }
 }

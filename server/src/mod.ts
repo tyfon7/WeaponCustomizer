@@ -1,12 +1,16 @@
 import type { DependencyContainer } from "tsyringe";
 
+import type { ItemHelper } from "@spt/helpers/ItemHelper";
 import type { ProfileHelper } from "@spt/helpers/ProfileHelper";
+import type { Item } from "@spt/models/eft/common/tables/IItem";
 import type { IPostSptLoadMod } from "@spt/models/external/IPostSptLoadMod";
 import type { IPreSptLoadMod } from "@spt/models/external/IPreSptLoadMod";
 import { LogTextColor } from "@spt/models/spt/logging/LogTextColor";
 import type { ILogger } from "@spt/models/spt/utils/ILogger";
 import type { StaticRouterModService } from "@spt/services/mod/staticRouter/StaticRouterModService";
-import { VFS } from "@spt/utils/VFS";
+import type { ICloner } from "@spt/utils/cloners/ICloner";
+import type { VFS } from "@spt/utils/VFS";
+
 import fs from "node:fs";
 import path from "node:path";
 
@@ -40,6 +44,7 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
         this.vfs = container.resolve<VFS>("VFS");
 
         const staticRouterModService = container.resolve<StaticRouterModService>("StaticRouterModService");
+        const cloner = container.resolve<ICloner>("RecursiveCloner");
 
         this.filepath = path.resolve(__dirname, "../customizations.json");
         this.load();
@@ -57,6 +62,45 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
                 }
             ],
             "custom-static-weapon-customizer"
+        );
+
+        // listen to ItemHelper.replaceIDs to keep in sync
+        container.afterResolution(
+            "ItemHelper",
+            (_, itemHelper: ItemHelper) => {
+                const originalReplaceIDs = itemHelper.replaceIDs;
+                itemHelper.replaceIDs = (originalItems, pmcData, insuredItems, fastPanel) => {
+                    const results: Item[] = originalReplaceIDs.call(
+                        itemHelper,
+                        originalItems,
+                        pmcData,
+                        insuredItems,
+                        fastPanel
+                    );
+
+                    let dirty = false;
+                    for (let i = 0; i < originalItems.length; i++) {
+                        const oldId = originalItems[i]._id;
+                        if (oldId in this.customizations) {
+                            const newId = results[i]._id;
+                            this.customizations[newId] = cloner.clone(this.customizations[oldId]);
+
+                            dirty = true;
+                            this.logger.logWithColor(
+                                `WeaponCustomizer: Weapon ${oldId} is now ${newId}, customizations copied`,
+                                LogTextColor.CYAN
+                            );
+                        }
+                    }
+
+                    if (dirty) {
+                        this.save();
+                    }
+
+                    return results;
+                };
+            },
+            { frequency: "Always" }
         );
     }
 

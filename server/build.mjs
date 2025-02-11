@@ -116,8 +116,8 @@ async function main() {
         logger.log("success", "Files successfully copied to temporary directory.");
 
         // Copy output to SPT installations for testing
+        logger.log("info", "Copying output to SPT installation");
         for (const sptPath of sptPaths) {
-            logger.log("info", "Copying output to SPT installation");
             const sptModPath = path.join(sptPath, "/user/mods/", projectShortName);
             await fs.copy(projectDir, sptModPath);
             logger.log("success", `Files successfully copied to ${sptModPath}`);

@@ -7,6 +7,7 @@ using Comfort.Common;
 using EFT;
 using EFT.InventoryLogic;
 using EFT.UI;
+using EFT.UI.Screens;
 using EFT.UI.WeaponModding;
 using HarmonyLib;
 using SPT.Reflection.Patching;
@@ -53,6 +54,8 @@ public static class EditPatches
         "mod_bipod"
     ];
 
+    private const string MultitoolId = "544fb5454bdc2df8738b456a";
+
     private static DefaultUIButton RevertButton;
     private static FieldInfo PresetField;
 
@@ -69,6 +72,11 @@ public static class EditPatches
         new FindBuildPatch().Enable();
         new SaveBuildPatch().Enable();
         new RemoveBuildPatch().Enable();
+
+        new ModdingIsActiveInRaidPatch().Enable();
+        new ModdingIsInteractiveInRaidPatch().Enable();
+        new ModWeaponInRaidPatch().Enable();
+        new SimpleModdingScreenPatch().Enable();
     }
 
     public class BoneMoverPatch : ModulePatch
@@ -329,6 +337,92 @@ public static class EditPatches
             {
                 __state.RemoveCustomizations();
             }
+        }
+    }
+
+    public class ModdingIsActiveInRaidPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(GClass3437), nameof(GClass3437.IsActive));
+        }
+
+        [PatchPostfix]
+        public static void Postfix(EItemInfoButton button, ref bool __result)
+        {
+            if (Settings.ModifyRaidWeapons.Value == ModRaidWeapon.Never)
+            {
+                return;
+            }
+
+            if (button == EItemInfoButton.Modding)
+            {
+                __result = true;
+            }
+        }
+    }
+
+    public class ModdingIsInteractiveInRaidPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(GClass3437), nameof(GClass3437.IsInteractive));
+        }
+
+        [PatchPostfix]
+        public static void Postfix(EItemInfoButton button, ref IResult __result, Item ___item_0, TraderControllerClass ___traderControllerClass)
+        {
+            if (button == EItemInfoButton.Modding && Plugin.InRaid() && ___traderControllerClass is InventoryController inventoryController)
+            {
+                if (inventoryController.ID == PatchConstants.BackEndSession.Profile.Id && inventoryController.IsItemEquipped(___item_0))
+                {
+                    __result = new FailedResult("You can't edit equipped weapon");
+                    return;
+                }
+
+                if (Settings.ModifyRaidWeapons.Value == ModRaidWeapon.WithTool && !inventoryController.Inventory.Equipment.GetAllItems().Any(i => i.TemplateId == MultitoolId))
+                {
+                    __result = new FailedResult("Inventory Errors/Not moddable without multitool");
+                    return;
+                }
+
+                __result = SuccessfulResult.New;
+            }
+        }
+    }
+
+    public class ModWeaponInRaidPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(ItemUiContext), nameof(ItemUiContext.ModWeapon));
+        }
+
+        [PatchPrefix]
+        public static bool Prefix(ItemUiContext __instance, Item item, InventoryController ___inventoryController_0)
+        {
+            new WeaponModdingScreen.GClass3561(item, ___inventoryController_0, __instance.CompoundItem_0).ShowScreen(EScreenState.Queued);
+            return false;
+        }
+    }
+
+    public class SimpleModdingScreenPatch : ModulePatch
+    {
+        protected override MethodBase GetTargetMethod()
+        {
+            return AccessTools.Method(typeof(ModdingScreenSlotView), nameof(ModdingScreenSlotView.Show));
+        }
+
+        [PatchPostfix]
+        public static void Postfix(ModdingScreenSlotView __instance, LineRenderer ____lineRenderer, Transform ____tooltipHoverArea)
+        {
+            if (!Plugin.InRaid())
+            {
+                return;
+            }
+
+            ____lineRenderer.gameObject.SetActive(false);
+            ____tooltipHoverArea.gameObject.SetActive(false);
         }
     }
 }

@@ -1,5 +1,7 @@
 ﻿using BepInEx;
 using BepInEx.Logging;
+using Comfort.Common;
+using EFT;
 
 namespace WeaponCustomizer;
 
@@ -20,5 +22,11 @@ public class Plugin : BaseUnityPlugin
         EditPatches.Enable();
         ClonePatches.Enable();
         ApplyPatches.Enable();
+    }
+
+    public static bool InRaid()
+    {
+        var instance = Singleton<AbstractGame>.Instance;
+        return instance != null && instance.InRaid;
     }
 }

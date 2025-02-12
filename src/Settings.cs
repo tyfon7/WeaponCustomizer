@@ -1,7 +1,16 @@
 using System.Collections.Generic;
+using System.ComponentModel;
 using BepInEx.Configuration;
 
 namespace WeaponCustomizer;
+
+internal enum ModRaidWeapon
+{
+    Never,
+    [Description("With Multitool")]
+    WithTool,
+    Always
+}
 
 internal class Settings
 {
@@ -9,6 +18,7 @@ internal class Settings
 
     public static ConfigEntry<int> StepSize { get; set; }
     public static ConfigEntry<bool> MoveEverything { get; set; }
+    public static ConfigEntry<ModRaidWeapon> ModifyRaidWeapons { get; set; }
 
     public static void Init(ConfigFile config)
     {
@@ -29,6 +39,15 @@ internal class Settings
             false,
             new ConfigDescription(
                 "Allow every part of the gun to be moved. Doesn't make sense, is silly, have fun.",
+                null,
+                new ConfigurationManagerAttributes { })));
+
+        configEntries.Add(ModifyRaidWeapons = config.Bind(
+            GeneralSection,
+            "Customize Weapons In Raid",
+            ModRaidWeapon.Never,
+            new ConfigDescription(
+                "When to enable the customization of weapons in raid",
                 null,
                 new ConfigurationManagerAttributes { })));
 

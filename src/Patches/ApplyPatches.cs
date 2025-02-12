@@ -44,6 +44,15 @@ public static class ApplyPatches
             {
                 ___Bone.gameObject.GetOrAddComponent<CustomizedMod>().Init(customPosition);
             }
+            else
+            {
+                // This bone is NOT customized, but was re-used from a pool. Remove the customization
+                var customizedMod = ___Bone.gameObject.GetComponent<CustomizedMod>();
+                if (customizedMod != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(customizedMod);
+                }
+            }
         }
     }
 

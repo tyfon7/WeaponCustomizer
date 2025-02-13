@@ -21,11 +21,10 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     private Vector3 originalLocalPosition;
     private Vector3 minLocalPosition;
     private Vector3 maxLocalPosition;
-    private float maxDistance;
     private Vector2 minScreen;
     private Vector2 maxScreen;
-    private Vector2 dragOffset;
-    private bool reversed;
+    private Transform rotator;
+    private Plane weaponPlane;
 
     private bool dragging;
     private bool hovered;
@@ -49,14 +48,14 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         }
 
         // These bones get reinitialized when attachments are added, so we can't assume the gun is straight. The rotator has the rotation
-        var rotator = mod.root.Find("Rotator");
+        rotator = mod.root.Find("Rotator");
+
         // Currently everything is locked to left-right axis (forward/backward on the gun)
         var direction = mod.parent.InverseTransformDirection(rotator.right);
 
         // Arbitrary magnitude for the moment
         minLocalPosition = originalLocalPosition - (MOVE_DISTANCE * direction);
         maxLocalPosition = originalLocalPosition + (MOVE_DISTANCE * direction);
-        maxDistance = Vector3.Distance(minLocalPosition, maxLocalPosition);
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -98,6 +97,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         {
             customizedMod.Reset();
             Destroy(customizedMod);
+            customizedMod = null;
         }
 
         weapon.ResetCustomization(slotId);
@@ -124,37 +124,41 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
             customizedMod.Init(originalLocalPosition, mod.localPosition);
         }
 
-        dragOffset = eventData.position - (Vector2)viewporter.TargetCamera.WorldToScreenPoint(mod.position);
-
         Vector3 minPosition = mod.parent.TransformPoint(minLocalPosition);
         Vector3 maxPosition = mod.parent.TransformPoint(maxLocalPosition);
 
         minScreen = viewporter.TargetCamera.WorldToScreenPoint(minPosition);
         maxScreen = viewporter.TargetCamera.WorldToScreenPoint(maxPosition);
 
-        // Depending on gun rotation, might need to swap min and max
-        if (reversed = minScreen.x > maxScreen.x)
-        {
-            (minScreen, maxScreen) = (maxScreen, minScreen);
-        }
+        weaponPlane = new Plane(rotator.forward, mod.position);
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        // Clamp the mouse position between the screen points
-        Vector2 screenPosition = Vector2.Max(minScreen, Vector2.Min(maxScreen, eventData.position - dragOffset));
-        var distance = Vector2.Distance(minScreen, screenPosition);
+        Vector2 mouseVector = eventData.position - minScreen;
+        Vector2 allowedVector = maxScreen - minScreen;
+
+        // This gets the amount of a vector A (the mouse position vector) that applies to vector B (the allowed positions of the mod)
+        // Which is to say, helps find the point where A projects onto B, aka the closest point on B from the tip of A
+        float projectedMagnitude = Vector2.Dot(mouseVector, allowedVector) / allowedVector.magnitude;
+        projectedMagnitude = Mathf.Clamp(projectedMagnitude, 0, allowedVector.magnitude);
+
         if (Settings.StepSize.Value > 0)
         {
-            var factor = Mathf.RoundToInt(distance / Settings.StepSize.Value);
-            distance = factor * Settings.StepSize.Value;
+            projectedMagnitude = Mathf.RoundToInt(projectedMagnitude / Settings.StepSize.Value) * Settings.StepSize.Value;
         }
 
-        float percentDelta = distance / Vector2.Distance(minScreen, maxScreen);
+        Vector2 screenPosition = Vector2.MoveTowards(minScreen, maxScreen, projectedMagnitude);
 
-        customizedMod.Move(reversed ?
-            Vector3.MoveTowards(maxLocalPosition, minLocalPosition, percentDelta * maxDistance) :
-            Vector3.MoveTowards(minLocalPosition, maxLocalPosition, percentDelta * maxDistance));
+        // With that perfect screen position, raycast onto the weapon plane to find the exact spot where the mod should go
+        Ray ray = viewporter.TargetCamera.ScreenPointToRay(screenPosition);
+        if (weaponPlane.Raycast(ray, out float enter))
+        {
+            Vector3 hitPoint = ray.GetPoint(enter);
+            Vector3 localHitPoint = mod.parent.InverseTransformPoint(hitPoint);
+
+            customizedMod.Move(localHitPoint);
+        }
 
         onChange(false);
     }

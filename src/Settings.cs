@@ -24,6 +24,15 @@ internal class Settings
     {
         var configEntries = new List<ConfigEntryBase>();
 
+        configEntries.Add(ModifyRaidWeapons = config.Bind(
+            GeneralSection,
+            "Customize Weapons In Raid",
+            ModRaidWeapon.Never,
+            new ConfigDescription(
+                "When to enable the customization of weapons in raid",
+                null,
+                new ConfigurationManagerAttributes { })));
+
         configEntries.Add(StepSize = config.Bind(
             GeneralSection,
             "Step Size",
@@ -42,14 +51,6 @@ internal class Settings
                 null,
                 new ConfigurationManagerAttributes { })));
 
-        configEntries.Add(ModifyRaidWeapons = config.Bind(
-            GeneralSection,
-            "Customize Weapons In Raid",
-            ModRaidWeapon.Never,
-            new ConfigDescription(
-                "When to enable the customization of weapons in raid",
-                null,
-                new ConfigurationManagerAttributes { })));
 
         RecalcOrder(configEntries);
 

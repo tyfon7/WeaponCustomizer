@@ -35,6 +35,11 @@ public static class ApplyPatches
         [PatchPostfix]
         public static void Postfix(Item item, Transform ___Bone)
         {
+            if (item == null || ___Bone == null)
+            {
+                return;
+            }
+
             if (item.GetRootItemNotEquipment() is not Weapon weapon || item.Parent.Container is not Slot parentSlot)
             {
                 return;
@@ -71,6 +76,11 @@ public static class ApplyPatches
             if (item is Weapon weapon && weapon.IsCustomized())
             {
                 GameObject root = await __result;
+                if (root == null)
+                {
+                    return;
+                }
+
                 foreach (var customizedMod in root.GetComponentsInChildren<CustomizedMod>())
                 {
                     customizedMod.LateUpdate();

@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading.Tasks;
 using EFT.InventoryLogic;
 using Newtonsoft.Json;
@@ -264,21 +266,37 @@ public static class Customizations
             }
         }
 
-        RequestHandler.PutJsonAsync("/weaponcustomizer/save", JsonConvert.SerializeObject(payload));
+        try
+        {
+            RequestHandler.PutJsonAsync("/weaponcustomizer/save", JsonConvert.SerializeObject(payload));
+        }
+        catch (Exception ex)
+        {
+            Plugin.Instance.Logger.LogError("Failed to save: " + ex.ToString());
+            NotificationManagerClass.DisplayWarningNotification("Failed to save weapon customization - check the server");
+        }
     }
 
     public static async Task LoadCustomizations()
     {
-        string payload = await RequestHandler.GetJsonAsync("/weaponcustomizer/load");
-        var customizations = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, CustomPositionJson>>>(payload);
-
-        foreach (var (id, slots) in customizations)
+        try
         {
-            var customPositions = AllCustomizations[id] = [];
-            foreach (var (slotId, customPosition) in slots)
+            string payload = await RequestHandler.GetJsonAsync("/weaponcustomizer/load");
+            var customizations = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, CustomPositionJson>>>(payload);
+
+            foreach (var (id, slots) in customizations)
             {
-                customPositions[slotId] = customPosition;
+                var customPositions = AllCustomizations[id] = [];
+                foreach (var (slotId, customPosition) in slots)
+                {
+                    customPositions[slotId] = customPosition;
+                }
             }
+        }
+        catch (Exception ex)
+        {
+            Plugin.Instance.Logger.LogError("Failed to save: " + ex.ToString());
+            NotificationManagerClass.DisplayWarningNotification("Failed to load Weapon Customizations - check the server");
         }
     }
 

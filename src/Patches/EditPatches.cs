@@ -374,7 +374,7 @@ public static class EditPatches
         {
             if (button == EItemInfoButton.Modding && Plugin.InRaid() && ___traderControllerClass is InventoryController inventoryController)
             {
-                if (inventoryController.ID == PatchConstants.BackEndSession.Profile.Id && inventoryController.IsItemEquipped(___item_0))
+                if (inventoryController.ID == ___item_0.Owner.ID && inventoryController.IsItemEquipped(___item_0))
                 {
                     __result = new FailedResult("You can't edit equipped weapon");
                     return;

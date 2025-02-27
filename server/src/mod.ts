@@ -32,12 +32,24 @@ type Customization = {
     rotation?: Quaternion;
 };
 
-type SavePayload = {
+type CustomizedObject = {
     id: string;
+    type: "weapon" | "preset" | "unknown";
+    name?: string;
     slots: Record<string, Customization>;
 };
 
-type Customizations = Record<string, Record<string, Customization>>;
+type Customizations = Record<string, CustomizedObject>;
+
+type FileFormat = {
+    description: string;
+    version: number;
+    customizations: Customizations;
+};
+
+type V1FileFormat = Record<string, Record<string, Customization>>;
+
+const currentSaveFormatVersion = 2;
 
 class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
     private logger: ILogger;
@@ -61,7 +73,7 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
             [
                 {
                     url: "/weaponcustomizer/save",
-                    action: async (url, info: SavePayload, sessionId, output) => this.saveCustomization(info)
+                    action: async (url, info: CustomizedObject, sessionId, output) => this.saveCustomization(info)
                 },
                 {
                     url: "/weaponcustomizer/load",
@@ -121,7 +133,7 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
         }
     }
 
-    private async saveCustomization(payload: SavePayload): Promise<string> {
+    private async saveCustomization(payload: CustomizedObject): Promise<string> {
         //this.logger.info(`WeaponCustomizer: Saving customization for weapon ${payload.weaponId}`);
         if (!payload || !payload.id) {
             this.logger.error("WeaponCustomizer: Bad save payload!");
@@ -130,7 +142,7 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
         if (Object.keys(payload.slots).length === 0) {
             delete this.customizations[payload.id];
         } else {
-            this.customizations[payload.id] = payload.slots;
+            this.customizations[payload.id] = payload;
         }
         await this.save();
 
@@ -140,11 +152,21 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
     private load() {
         try {
             if (this.vfs.exists(this.filepath)) {
-                this.customizations = JSON.parse(this.vfs.readFile(this.filepath));
+                const file = JSON.parse(this.vfs.readFile(this.filepath));
+                switch (file.version) {
+                    case undefined:
+                        this.customizations = this.convertV1ToCurrent(file);
+                        this.save();
+                        break;
+                    case currentSaveFormatVersion:
+                        this.customizations = file.customizations;
+                        break;
+                    default:
+                        throw "Unknown file version!";
+                }
             } else {
-                this.customizations = {};
-
                 // Create the file with fs - vfs.writeFile pukes on windows paths if it needs to create the file
+                this.customizations = {};
                 fs.writeFileSync(this.filepath, JSON.stringify(this.customizations));
             }
         } catch (error) {
@@ -195,11 +217,31 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
     }
 
     private async save() {
+        const file: FileFormat = {
+            description:
+                "This is a record of all customizations that WeaponCustomizer has made. You can delete this file and restart your server to reset all customizations. Modify this file at your own risk.",
+            version: currentSaveFormatVersion,
+            customizations: this.customizations
+        };
+
         try {
-            await this.vfs.writeFileAsync(this.filepath, JSON.stringify(this.customizations, null, 2));
+            await this.vfs.writeFileAsync(this.filepath, JSON.stringify(file, null, 2));
         } catch (error) {
             this.logger.error("WeaponCustomizer: Failed to save weapon customizations! " + error);
         }
+    }
+
+    private convertV1ToCurrent(file: V1FileFormat): Customizations {
+        const result: Customizations = {};
+        for (const [key, value] of Object.entries(file)) {
+            result[key] = {
+                id: key,
+                type: "unknown",
+                slots: value
+            };
+        }
+
+        return result;
     }
 }
 

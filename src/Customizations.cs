@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.Serialization;
 using System.Threading.Tasks;
+using EFT.InventoryLogic;
 using Newtonsoft.Json;
 using SPT.Common.Http;
 
@@ -10,11 +12,23 @@ public static class Customizations
 {
     public static readonly Dictionary<string, Dictionary<string, Customization>> Database = [];
 
-    public static void Save(string id, Dictionary<string, Customization> slots)
+    public static void Save(Weapon weapon, Dictionary<string, Customization> slots)
     {
-        SavePayload payload = new()
+        Save(weapon.Id, CustomizationType.Weapon, weapon.ShortName.Localized(), slots);
+    }
+
+    public static void Save(Preset preset, Dictionary<string, Customization> slots)
+    {
+        Save(preset.Id, CustomizationType.Preset, preset.HandbookName, slots);
+    }
+
+    private static void Save(string id, CustomizationType type, string name, Dictionary<string, Customization> slots)
+    {
+        CustomizedObject payload = new()
         {
             id = id,
+            type = type,
+            name = name,
             slots = []
         };
 
@@ -49,13 +63,13 @@ public static class Customizations
     {
         try
         {
-            string payload = await RequestHandler.GetJsonAsync("/weaponcustomizer/load");
-            var allCustomizations = JsonConvert.DeserializeObject<Dictionary<string, Dictionary<string, CustomizationJson>>>(payload);
+            string jsonPayload = await RequestHandler.GetJsonAsync("/weaponcustomizer/load");
+            var allCustomizations = JsonConvert.DeserializeObject<Dictionary<string, CustomizedObject>>(jsonPayload);
 
-            foreach (var (id, slots) in allCustomizations)
+            foreach (var (id, customizedObject) in allCustomizations)
             {
                 var customizations = Database[id] = [];
-                foreach (var (slotId, customization) in slots)
+                foreach (var (slotId, customization) in customizedObject.slots)
                 {
                     customizations[slotId] = customization;
                 }
@@ -68,9 +82,21 @@ public static class Customizations
         }
     }
 
-    private struct SavePayload
+    private struct CustomizedObject
     {
         public string id;
+        public CustomizationType type;
+        public string name;
         public Dictionary<string, CustomizationJson> slots;
+    }
+
+    private enum CustomizationType
+    {
+        [EnumMember(Value = "unknown")]
+        Unknown,
+        [EnumMember(Value = "weapon")]
+        Weapon,
+        [EnumMember(Value = "preset")]
+        Preset,
     }
 }

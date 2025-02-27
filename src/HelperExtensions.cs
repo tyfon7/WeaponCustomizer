@@ -68,7 +68,7 @@ public static class HelperExtensions
         // Only save the actual guns, not copies in the edit build screen
         if (weapon.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
         {
-            Customizations.Save(weapon.Id, slots);
+            Customizations.Save(weapon, slots);
         }
     }
 
@@ -83,7 +83,7 @@ public static class HelperExtensions
             // Only save the actual guns, not copies in the edit build screen
             if (weapon.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
             {
-                Customizations.Save(weapon.Id, null);
+                Customizations.Save(weapon, null);
             }
         }
     }
@@ -102,7 +102,7 @@ public static class HelperExtensions
             // Only save the actual guns, not copies in the edit build screen
             if (weapon.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
             {
-                Customizations.Save(weapon.Id, slots);
+                Customizations.Save(weapon, slots);
             }
         }
     }
@@ -126,7 +126,7 @@ public static class HelperExtensions
         // Only save the actual guns, not copies in the edit build screen
         if (to.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
         {
-            Customizations.Save(to.Id, slots);
+            Customizations.Save(to, slots);
         }
     }
 
@@ -157,7 +157,7 @@ public static class HelperExtensions
         // Only save the actual guns, not copies in the edit build screen
         if (to.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
         {
-            Customizations.Save(to.Id, slots);
+            Customizations.Save(to, slots);
         }
     }
 
@@ -173,7 +173,7 @@ public static class HelperExtensions
         // Only save the actual guns, not copies in the edit build screen
         if (to.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
         {
-            Customizations.Save(to.Id, slots);
+            Customizations.Save(to, slots);
         }
     }
 
@@ -186,14 +186,14 @@ public static class HelperExtensions
             Customizations.Database.Add(preset.Id, new(slots));
         }
 
-        Customizations.Save(preset.Id, slots);
+        Customizations.Save(preset, slots);
     }
 
     public static void RemoveCustomizations(this Preset preset)
     {
         if (Customizations.Database.Remove(preset.Id))
         {
-            Customizations.Save(preset.Id, null);
+            Customizations.Save(preset, null);
         }
     }
 

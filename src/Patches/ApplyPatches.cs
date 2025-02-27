@@ -45,9 +45,9 @@ public static class ApplyPatches
                 return;
             }
 
-            if (weapon.IsCustomized(parentSlot.FullId, out CustomPosition customPosition))
+            if (weapon.IsCustomized(parentSlot.FullId, out Customization customization))
             {
-                ___Bone.gameObject.GetOrAddComponent<CustomizedMod>().Init(customPosition);
+                ___Bone.gameObject.GetOrAddComponent<CustomizedMod>().Init(customization);
             }
             else
             {
@@ -101,7 +101,7 @@ public static class ApplyPatches
         [PatchPostfix]
         public static void Postfix(Item item, ref int __result)
         {
-            if (item is Weapon weapon && weapon.IsCustomized(out Dictionary<string, CustomPosition> slots))
+            if (item is Weapon weapon && weapon.IsCustomized(out Dictionary<string, Customization> slots))
             {
                 foreach (var (key, value) in slots)
                 {

@@ -19,14 +19,19 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     private Weapon weapon;
     private string slotId;
     private CameraViewporter viewporter;
+    private Transform rotator;
     private Action<bool> onChange;
 
     private Vector2 minScreen;
     private Vector2 maxScreen;
+    private Vector2 screenStart;
     private Plane movementPlane;
+    private Vector3 rotationAxis;
+    private Quaternion rotationStart;
 
     private bool dragging;
     private bool hovered;
+    private bool rotating;
 
     public void Init(Image boneIcon, Transform mod, Weapon weapon, string slotId, CameraViewporter viewporter, Action<bool> onChange)
     {
@@ -36,6 +41,8 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         this.slotId = slotId;
         this.viewporter = viewporter;
         this.onChange = onChange;
+
+        rotator = mod.root.Find("Rotator");
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -78,11 +85,10 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
             customizedMod.Reset();
             Destroy(customizedMod);
             customizedMod = null;
+
+            weapon.ResetCustomization(slotId);
+            onChange(true);
         }
-
-        weapon.ResetCustomization(slotId);
-
-        onChange(true);
     }
 
     public void OnBeginDrag(PointerEventData eventData)
@@ -97,19 +103,20 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         dragging = true;
         SetColor();
 
+        screenStart = eventData.position;
+
         customizedMod = mod.GetComponent<CustomizedMod>();
         if (customizedMod == null)
         {
             customizedMod = mod.gameObject.AddComponent<CustomizedMod>();
-            customizedMod.Init(mod.localPosition, mod.localPosition);
+            customizedMod.Init();
         }
 
-        var originalLocalPosition = customizedMod.Customization.OriginalPosition;
+        var originalLocalPosition = customizedMod.OriginalPosition;
 
         bool shiftDown = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         bool ctrlDown = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-
-        var rotator = mod.root.Find("Rotator");
+        bool altDown = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
 
         Vector3 upDirection = mod.parent.InverseTransformDirection(rotator.up);
         Vector3 forwardDirection = mod.parent.InverseTransformDirection(rotator.forward);
@@ -145,6 +152,16 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         var minLocalPosition = originalLocalPosition + otherOffset - (distance * direction);
         var maxLocalPosition = originalLocalPosition + otherOffset + (distance * direction);
 
+        if (altDown)
+        {
+            rotating = true;
+            rotationAxis = mod.parent.localRotation * (maxLocalPosition - minLocalPosition); // need to account for parent's rotation as well
+            rotationStart = mod.localRotation;
+            minScreen = new(0, eventData.position.y);
+            maxScreen = new(Screen.width, eventData.position.y);
+            return;
+        }
+
         Vector3 minPosition = mod.parent.TransformPoint(minLocalPosition);
         Vector3 maxPosition = mod.parent.TransformPoint(maxLocalPosition);
 
@@ -154,6 +171,12 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
 
     public void OnDrag(PointerEventData eventData)
     {
+        if (rotating)
+        {
+            OnRotate(eventData);
+            return;
+        }
+
         Vector2 mouseVector = eventData.position - minScreen;
         Vector2 allowedVector = maxScreen - minScreen;
 
@@ -182,9 +205,21 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         onChange(false);
     }
 
+    private void OnRotate(PointerEventData eventData)
+    {
+        float distance = eventData.position.x - screenStart.x;
+        float percent = distance / Screen.width;
+        float degrees = 360 * percent;
+
+        customizedMod.Rotate(rotationStart * Quaternion.AngleAxis(degrees, rotationAxis));
+
+        onChange(false);
+    }
+
     public void OnEndDrag(PointerEventData eventData)
     {
         dragging = false;
+        rotating = false;
         SetColor();
 
         weapon.SetCustomization(slotId, customizedMod.Customization);

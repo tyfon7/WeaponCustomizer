@@ -51,9 +51,7 @@ internal class Settings
                 null,
                 new ConfigurationManagerAttributes { })));
 
-
         RecalcOrder(configEntries);
-
     }
 
     private static void RecalcOrder(List<ConfigEntryBase> configEntries)

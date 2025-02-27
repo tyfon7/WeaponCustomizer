@@ -20,17 +20,24 @@ type Vector3 = {
     z: number;
 };
 
-type CustomPosition = {
-    original: Vector3;
-    modified: Vector3;
+type Quaternion = {
+    w: number;
+    x: number;
+    y: number;
+    z: number;
 };
 
-type CustomizePayload = {
+type Customization = {
+    position?: Vector3;
+    rotation?: Quaternion;
+};
+
+type SavePayload = {
     id: string;
-    slots: Record<string, CustomPosition>;
+    slots: Record<string, Customization>;
 };
 
-type Customizations = Record<string, Record<string, CustomPosition>>;
+type Customizations = Record<string, Record<string, Customization>>;
 
 class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
     private logger: ILogger;
@@ -54,7 +61,7 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
             [
                 {
                     url: "/weaponcustomizer/save",
-                    action: async (url, info: CustomizePayload, sessionId, output) => this.saveCustomization(info)
+                    action: async (url, info: SavePayload, sessionId, output) => this.saveCustomization(info)
                 },
                 {
                     url: "/weaponcustomizer/load",
@@ -114,7 +121,7 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
         }
     }
 
-    private async saveCustomization(payload: CustomizePayload): Promise<string> {
+    private async saveCustomization(payload: SavePayload): Promise<string> {
         //this.logger.info(`WeaponCustomizer: Saving customization for weapon ${payload.weaponId}`);
         if (!payload || !payload.id) {
             this.logger.error("WeaponCustomizer: Bad save payload!");

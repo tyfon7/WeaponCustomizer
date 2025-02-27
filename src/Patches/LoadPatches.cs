@@ -34,7 +34,7 @@ public static class LoadPatches
         public static async void Postfix(Task<IResult> __result)
         {
             await __result;
-            Customizations.LoadCustomizations().HandleExceptions();
+            Customizations.Load().HandleExceptions();
         }
     }
 
@@ -54,7 +54,7 @@ public static class LoadPatches
                 return;
             }
 
-            Customizations.LoadCustomizations().HandleExceptions();
+            Customizations.Load().HandleExceptions();
         }
     }
 
@@ -71,7 +71,7 @@ public static class LoadPatches
         {
             if (message.HasRewards && message.Type == ChatShared.EMessageType.InsuranceReturn)
             {
-                Customizations.LoadCustomizations().HandleExceptions();
+                Customizations.Load().HandleExceptions();
             }
         }
     }

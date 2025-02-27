@@ -13,7 +13,7 @@ public class CustomizedMod : MonoBehaviour
 
     public void Init()
     {
-        Customization = new(transform.localPosition, null, transform.localRotation, null);
+        Customization = new(transform.localPosition, transform.localRotation);
     }
 
     public void Init(Customization customization)

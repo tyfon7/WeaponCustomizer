@@ -10,6 +10,9 @@ public struct Customization(Vector3 originalPosition, Vector3? position, Quatern
     public Quaternion? OriginalRotation = originalRotation;
     public Quaternion? Rotation = rotation;
 
+    public Customization(Vector3 originalPosition, Quaternion originalRotation) : this(originalPosition, null, originalRotation, null)
+    { }
+
     public override int GetHashCode()
     {
         int hash = 17;

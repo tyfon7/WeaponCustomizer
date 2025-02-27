@@ -73,7 +73,7 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
             [
                 {
                     url: "/weaponcustomizer/save",
-                    action: async (url, info: CustomizedObject, sessionId, output) => this.saveCustomization(info)
+                    action: async (url, info: CustomizedObject[], sessionId, output) => this.saveCustomization(info)
                 },
                 {
                     url: "/weaponcustomizer/load",
@@ -133,17 +133,19 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
         }
     }
 
-    private async saveCustomization(payload: CustomizedObject): Promise<string> {
-        //this.logger.info(`WeaponCustomizer: Saving customization for weapon ${payload.weaponId}`);
-        if (!payload || !payload.id) {
-            this.logger.error("WeaponCustomizer: Bad save payload!");
-            return;
+    private async saveCustomization(payload: CustomizedObject[]): Promise<string> {
+        for (const customizedObject of payload) {
+            if (!customizedObject || !customizedObject.id) {
+                this.logger.error("WeaponCustomizer: Bad save payload!");
+                return;
+            }
+            if (Object.keys(customizedObject.slots).length === 0) {
+                delete this.customizations[customizedObject.id];
+            } else {
+                this.customizations[customizedObject.id] = customizedObject;
+            }
         }
-        if (Object.keys(payload.slots).length === 0) {
-            delete this.customizations[payload.id];
-        } else {
-            this.customizations[payload.id] = payload;
-        }
+
         await this.save();
 
         return JSON.stringify({ success: true });

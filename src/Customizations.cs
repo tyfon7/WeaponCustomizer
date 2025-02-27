@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
 using EFT.InventoryLogic;
+using EFT.UI;
 using Newtonsoft.Json;
 using SPT.Common.Http;
 
@@ -11,6 +12,8 @@ namespace WeaponCustomizer;
 public static class Customizations
 {
     public static readonly Dictionary<string, Dictionary<string, Customization>> Database = [];
+
+    private static readonly List<CustomizedObject> SaveList = [];
 
     public static void Save(Weapon weapon, Dictionary<string, Customization> slots)
     {
@@ -24,7 +27,7 @@ public static class Customizations
 
     private static void Save(string id, CustomizationType type, string name, Dictionary<string, Customization> slots)
     {
-        CustomizedObject payload = new()
+        CustomizedObject customizedObject = new()
         {
             id = id,
             type = type,
@@ -36,26 +39,47 @@ public static class Customizations
         {
             foreach (var (slotId, customPosition) in slots)
             {
-                payload.slots[slotId] = customPosition;
+                customizedObject.slots[slotId] = customPosition;
             }
         }
 
-        try
-        {
-            string json = JsonConvert.SerializeObject(
-                payload,
-                Formatting.None,
-                new JsonSerializerSettings
-                {
-                    NullValueHandling = NullValueHandling.Ignore
-                });
+        SaveList.Add(customizedObject);
+        Save();
+    }
 
-            RequestHandler.PutJsonAsync("/weaponcustomizer/save", json);
-        }
-        catch (Exception ex)
+    private static bool PendingSave = false;
+
+    private static void Save()
+    {
+        if (!PendingSave)
         {
-            Plugin.Instance.Logger.LogError("Failed to save: " + ex.ToString());
-            NotificationManagerClass.DisplayWarningNotification("Failed to save weapon customization - check the server");
+            PendingSave = true;
+            ItemUiContext.Instance.WaitForEndOfFrame(() =>
+            {
+                PendingSave = false;
+                if (SaveList.Count > 0)
+                {
+                    try
+                    {
+                        string json = JsonConvert.SerializeObject(
+                            SaveList.ToArray(),
+                            Formatting.None,
+                            new JsonSerializerSettings
+                            {
+                                NullValueHandling = NullValueHandling.Ignore
+                            });
+
+                        SaveList.Clear();
+
+                        RequestHandler.PutJsonAsync("/weaponcustomizer/save", json);
+                    }
+                    catch (Exception ex)
+                    {
+                        Plugin.Instance.Logger.LogError("Failed to save: " + ex.ToString());
+                        NotificationManagerClass.DisplayWarningNotification("Failed to save weapon customization - check the server");
+                    }
+                }
+            });
         }
     }
 

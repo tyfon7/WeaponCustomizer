@@ -155,7 +155,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         if (altDown)
         {
             rotating = true;
-            rotationAxis = mod.parent.localRotation * (maxLocalPosition - minLocalPosition); // need to account for parent's rotation as well
+            rotationAxis = mod.parent.localRotation * direction;
             rotationStart = mod.localRotation;
             minScreen = new(0, eventData.position.y);
             maxScreen = new(Screen.width, eventData.position.y);

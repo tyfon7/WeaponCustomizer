@@ -198,6 +198,14 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
                     map.set(preset.Id, true);
                 }
             }
+
+            for (const insurance of profile.insurance ?? []) {
+                for (const item of insurance.items ?? []) {
+                    if (map.has(item._id)) {
+                        map.set(item._id, true);
+                    }
+                }
+            }
         }
 
         let dirtyCount = 0;

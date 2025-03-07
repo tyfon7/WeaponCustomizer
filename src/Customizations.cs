@@ -37,9 +37,9 @@ public static class Customizations
 
         if (slots != null)
         {
-            foreach (var (slotId, customPosition) in slots)
+            foreach (var (slotId, customization) in slots)
             {
-                customizedObject.slots[slotId] = customPosition;
+                customizedObject.slots[slotId] = customization;
             }
         }
 

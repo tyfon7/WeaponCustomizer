@@ -12,6 +12,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     private const float LEFT_RIGHT_MOVE_DISTANCE = 0.5f;
     private const float UP_DOWN_MOVE_DISTANCE = 0.2f;
     private const float SIDE_MOVE_DISTANCE = 0.2f;
+    private const float STEP_INTERVAL = 0.002f;
 
     private Image boneIcon;
     private Transform mod;
@@ -22,9 +23,12 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     private Transform rotator;
     private Action<bool> onChange;
 
+    private Vector3 midLocalPosition;
+    private Vector3 minLocalPosition;
+    private Vector3 maxLocalPosition;
     private Vector2 minScreen;
     private Vector2 maxScreen;
-    private Vector2 screenStart;
+    private Vector2 startScreen;
     private Plane movementPlane;
     private Vector3 rotationAxis;
     private Quaternion rotationStart;
@@ -103,7 +107,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         dragging = true;
         SetColor();
 
-        screenStart = eventData.position;
+        startScreen = eventData.position;
 
         customizedMod = mod.GetComponent<CustomizedMod>();
         if (customizedMod == null)
@@ -149,9 +153,6 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
             movementPlane = new Plane(rotator.forward, mod.position);
         }
 
-        var minLocalPosition = originalLocalPosition + otherOffset - (distance * direction);
-        var maxLocalPosition = originalLocalPosition + otherOffset + (distance * direction);
-
         if (altDown)
         {
             rotating = true;
@@ -161,6 +162,10 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
             maxScreen = new(Screen.width, eventData.position.y);
             return;
         }
+
+        midLocalPosition = originalLocalPosition + otherOffset;
+        minLocalPosition = midLocalPosition - (distance * direction);
+        maxLocalPosition = midLocalPosition + (distance * direction);
 
         Vector3 minPosition = mod.parent.TransformPoint(minLocalPosition);
         Vector3 maxPosition = mod.parent.TransformPoint(maxLocalPosition);
@@ -185,11 +190,6 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         float projectedMagnitude = Vector2.Dot(mouseVector, allowedVector) / allowedVector.magnitude;
         projectedMagnitude = Mathf.Clamp(projectedMagnitude, 0, allowedVector.magnitude);
 
-        if (Settings.StepSize.Value > 0)
-        {
-            projectedMagnitude = Mathf.RoundToInt(projectedMagnitude / Settings.StepSize.Value) * Settings.StepSize.Value;
-        }
-
         Vector2 screenPosition = Vector2.MoveTowards(minScreen, maxScreen, projectedMagnitude);
 
         // With that perfect screen position, raycast onto the weapon plane to find the exact spot where the mod should go
@@ -197,9 +197,21 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         if (movementPlane.Raycast(ray, out float enter))
         {
             Vector3 hitPoint = ray.GetPoint(enter);
-            Vector3 localHitPoint = mod.parent.InverseTransformPoint(hitPoint);
+            Vector3 newLocalPosition = mod.parent.InverseTransformPoint(hitPoint);
 
-            customizedMod.Move(localHitPoint);
+            float moveDistance = (newLocalPosition - midLocalPosition).magnitude;
+            if (Settings.StepSize.Value > 0)
+            {
+                float localStepSize = Settings.StepSize.Value * STEP_INTERVAL;
+                moveDistance = Mathf.RoundToInt(moveDistance / localStepSize) * localStepSize;
+            }
+
+            var target = (maxLocalPosition - newLocalPosition).magnitude > (newLocalPosition - minLocalPosition).magnitude ?
+                minLocalPosition :
+                maxLocalPosition;
+
+            newLocalPosition = Vector3.MoveTowards(midLocalPosition, target, moveDistance);
+            customizedMod.Move(newLocalPosition);
         }
 
         onChange(false);
@@ -207,9 +219,14 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
 
     private void OnRotate(PointerEventData eventData)
     {
-        float distance = eventData.position.x - screenStart.x;
+        float distance = eventData.position.x - startScreen.x;
         float percent = distance / Screen.width;
         float degrees = 360 * percent;
+
+        if (Settings.RotationStepSize.Value > 0)
+        {
+            degrees = Mathf.RoundToInt(degrees / Settings.RotationStepSize.Value) * Settings.RotationStepSize.Value;
+        }
 
         customizedMod.Rotate(rotationStart * Quaternion.AngleAxis(degrees, rotationAxis));
 

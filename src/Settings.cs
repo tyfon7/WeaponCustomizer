@@ -17,6 +17,7 @@ internal class Settings
     private const string GeneralSection = "General";
 
     public static ConfigEntry<int> StepSize { get; set; }
+    public static ConfigEntry<int> RotationStepSize { get; set; }
     public static ConfigEntry<bool> MoveEverything { get; set; }
     public static ConfigEntry<ModRaidWeapon> ModifyRaidWeapons { get; set; }
 
@@ -38,8 +39,17 @@ internal class Settings
             "Step Size",
             0,
             new ConfigDescription(
-                "Move attachments by X pixels at a time. Use 0 for smooth motion.",
-                new AcceptableValueRange<int>(0, 200),
+                "Moves attachments in discrete step intervals. Use 0 for smooth motion.",
+                new AcceptableValueRange<int>(0, 20),
+                new ConfigurationManagerAttributes { })));
+
+        configEntries.Add(RotationStepSize = config.Bind(
+            GeneralSection,
+            "Rotation Angle",
+            0,
+            new ConfigDescription(
+                "Rotate attachments in steps by degrees. Use 0 for smooth rotation.",
+                new AcceptableValueRange<int>(0, 90),
                 new ConfigurationManagerAttributes { })));
 
         configEntries.Add(MoveEverything = config.Bind(

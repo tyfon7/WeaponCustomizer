@@ -58,6 +58,12 @@ public static class HelperExtensions
 
     public static void SetCustomization(this Weapon weapon, string slotId, Customization customPosition)
     {
+        if (!customPosition.Position.HasValue && !customPosition.Rotation.HasValue)
+        {
+            weapon.ResetCustomization(slotId);
+            return;
+        }
+
         if (!Customizations.Database.TryGetValue(weapon.Id, out var slots))
         {
             slots = Customizations.Database[weapon.Id] = [];

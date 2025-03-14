@@ -1,5 +1,7 @@
-import { Item } from "@spt/models/eft/common/tables/IItem";
-import { ISystemData, IUserDialogInfo, MessageContentRagfair } from "@spt/models/eft/profile/ISptProfile";
+import { IItem } from "@spt/models/eft/common/tables/IItem";
+import { IMessageContentRagfair } from "@spt/models/eft/profile/IMessageContentRagfair";
+import { ISystemData } from "@spt/models/eft/profile/ISystemData";
+import { IUserDialogInfo } from "@spt/models/eft/profile/IUserDialogInfo";
 import { MessageType } from "@spt/models/enums/MessageType";
 import { Traders } from "@spt/models/enums/Traders";
 export interface ISendMessageDetails {
@@ -16,7 +18,7 @@ export interface ISendMessageDetails {
     /** Optional - used in player/system messages, otherwise templateId is used */
     messageText?: string;
     /** Optinal - Items to send to player */
-    items?: Item[];
+    items?: IItem[];
     /** Optional - How long items will be stored in mail before expiry */
     itemsMaxStorageLifetimeSeconds?: number;
     /** Optional - Used when sending messages from traders who send text from locale json */
@@ -24,9 +26,11 @@ export interface ISendMessageDetails {
     /** Optional - ragfair related */
     systemData?: ISystemData;
     /** Optional - Used by ragfair messages */
-    ragfairDetails?: MessageContentRagfair;
+    ragfairDetails?: IMessageContentRagfair;
     /** OPTIONAL - allows modification of profile settings via mail */
     profileChangeEvents?: IProfileChangeEvent[];
+    /** Optional - the MongoID of the dialogue message to reply to */
+    replyTo?: string;
 }
 export interface IProfileChangeEvent {
     _id: string;

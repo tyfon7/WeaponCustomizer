@@ -1,9 +1,5 @@
 import { ISendMessageRequest } from "@spt/models/eft/dialog/ISendMessageRequest";
-import { IUserDialogInfo } from "@spt/models/eft/profile/ISptProfile";
-/**
- * @deprecated As of v3.7.6. Use IChatCommand. Will be removed in v3.9.0.
- */
-export type ICommandoCommand = IChatCommand;
+import { IUserDialogInfo } from "@spt/models/eft/profile/IUserDialogInfo";
 export interface IChatCommand {
     getCommandPrefix(): string;
     getCommandHelp(command: string): string;

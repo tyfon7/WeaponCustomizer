@@ -5,10 +5,10 @@ import { IChangeRequestData } from "@spt/models/eft/launcher/IChangeRequestData"
 import { ILoginRequestData } from "@spt/models/eft/launcher/ILoginRequestData";
 import { IRegisterData } from "@spt/models/eft/launcher/IRegisterData";
 import { IConnectResponse } from "@spt/models/eft/profile/IConnectResponse";
-import { Info, ModDetails } from "@spt/models/eft/profile/ISptProfile";
+import { IModDetails, Info } from "@spt/models/eft/profile/ISptProfile";
 import { ICoreConfig } from "@spt/models/spt/config/ICoreConfig";
 import { IPackageJsonData } from "@spt/models/spt/mod/IPackageJsonData";
-import { ILogger } from "@spt/models/spt/utils/ILogger";
+import type { ILogger } from "@spt/models/spt/utils/ILogger";
 import { ConfigServer } from "@spt/servers/ConfigServer";
 import { SaveServer } from "@spt/servers/SaveServer";
 import { DatabaseService } from "@spt/services/DatabaseService";
@@ -38,8 +38,8 @@ export declare class LauncherController {
     protected getProfileDescriptions(): Record<string, string>;
     find(sessionId: string): Info;
     login(info: ILoginRequestData): string;
-    register(info: IRegisterData): string;
-    protected createAccount(info: IRegisterData): string;
+    register(info: IRegisterData): Promise<string>;
+    protected createAccount(info: IRegisterData): Promise<string>;
     protected generateProfileId(): string;
     protected formatID(timeStamp: number, counter: number): string;
     changeUsername(info: IChangeRequestData): string;
@@ -61,5 +61,5 @@ export declare class LauncherController {
      * @param sessionId Player id
      * @returns Array of mod details
      */
-    getServerModsProfileUsed(sessionId: string): ModDetails[];
+    getServerModsProfileUsed(sessionId: string): IModDetails[];
 }

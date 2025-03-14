@@ -1,20 +1,24 @@
 import { ItemHelper } from "@spt/helpers/ItemHelper";
 import { IPmcData } from "@spt/models/eft/common/IPmcData";
-import { Common, CounterKeyValue, Stats } from "@spt/models/eft/common/tables/IBotBase";
-import { ISptProfile } from "@spt/models/eft/profile/ISptProfile";
+import { Common, ICounterKeyValue, IStats } from "@spt/models/eft/common/tables/IBotBase";
+import { CustomisationSource } from "@spt/models/eft/common/tables/ICustomisationStorage";
+import { IItem } from "@spt/models/eft/common/tables/IItem";
+import { IReward } from "@spt/models/eft/common/tables/IReward";
+import { ISearchFriendResponse } from "@spt/models/eft/profile/ISearchFriendResponse";
+import { ISpt, ISptProfile } from "@spt/models/eft/profile/ISptProfile";
 import { IValidateNicknameRequestData } from "@spt/models/eft/profile/IValidateNicknameRequestData";
+import { BonusType } from "@spt/models/enums/BonusType";
 import { SkillTypes } from "@spt/models/enums/SkillTypes";
 import { IInventoryConfig } from "@spt/models/spt/config/IInventoryConfig";
-import { ILogger } from "@spt/models/spt/utils/ILogger";
+import type { ILogger } from "@spt/models/spt/utils/ILogger";
 import { ConfigServer } from "@spt/servers/ConfigServer";
 import { SaveServer } from "@spt/servers/SaveServer";
 import { DatabaseService } from "@spt/services/DatabaseService";
 import { LocalisationService } from "@spt/services/LocalisationService";
-import { ProfileSnapshotService } from "@spt/services/ProfileSnapshotService";
-import { ICloner } from "@spt/utils/cloners/ICloner";
 import { HashUtil } from "@spt/utils/HashUtil";
 import { TimeUtil } from "@spt/utils/TimeUtil";
 import { Watermark } from "@spt/utils/Watermark";
+import type { ICloner } from "@spt/utils/cloners/ICloner";
 export declare class ProfileHelper {
     protected logger: ILogger;
     protected hashUtil: HashUtil;
@@ -23,12 +27,11 @@ export declare class ProfileHelper {
     protected saveServer: SaveServer;
     protected databaseService: DatabaseService;
     protected itemHelper: ItemHelper;
-    protected profileSnapshotService: ProfileSnapshotService;
     protected localisationService: LocalisationService;
     protected configServer: ConfigServer;
     protected cloner: ICloner;
     protected inventoryConfig: IInventoryConfig;
-    constructor(logger: ILogger, hashUtil: HashUtil, watermark: Watermark, timeUtil: TimeUtil, saveServer: SaveServer, databaseService: DatabaseService, itemHelper: ItemHelper, profileSnapshotService: ProfileSnapshotService, localisationService: LocalisationService, configServer: ConfigServer, cloner: ICloner);
+    constructor(logger: ILogger, hashUtil: HashUtil, watermark: Watermark, timeUtil: TimeUtil, saveServer: SaveServer, databaseService: DatabaseService, itemHelper: ItemHelper, localisationService: LocalisationService, configServer: ConfigServer, cloner: ICloner);
     /**
      * Remove/reset a completed quest condtion from players profile quest data
      * @param sessionID Session id
@@ -47,18 +50,10 @@ export declare class ProfileHelper {
      */
     getCompleteProfile(sessionId: string): IPmcData[];
     /**
-     * Fix xp doubling on post-raid xp reward screen by sending a 'dummy' profile to the post-raid screen
-     * Server saves the post-raid changes prior to the xp screen getting the profile, this results in the xp screen using
-     * the now updated profile values as a base, meaning it shows x2 xp gained
-     * Instead, clone the post-raid profile (so we dont alter its values), apply the pre-raid xp values to the cloned objects and return
-     * Delete snapshot of pre-raid profile prior to returning profile data
-     * @param sessionId Session id
-     * @param output pmc and scav profiles array
-     * @param pmcProfile post-raid pmc profile
-     * @param scavProfile post-raid scav profile
-     * @returns Updated profile array
+     * Sanitize any information from the profile that the client does not expect to receive
+     * @param clonedProfile A clone of the full player profile
      */
-    protected postRaidXpWorkaroundFix(sessionId: string, pmcProfile: IPmcData, scavProfile: IPmcData, output: IPmcData[]): IPmcData[];
+    protected sanitizeProfileForClient(clonedProfile: ISptProfile): void;
     /**
      * Check if a nickname is used by another profile loaded by the server
      * @param nicknameRequest nickname request object
@@ -91,13 +86,31 @@ export declare class ProfileHelper {
      * @returns Max level
      */
     getMaxLevel(): number;
-    getDefaultSptDataObject(): any;
+    getDefaultSptDataObject(): ISpt;
     /**
      * Get full representation of a players profile json
      * @param sessionID Profile id to get
      * @returns ISptProfile object
      */
     getFullProfile(sessionID: string): ISptProfile | undefined;
+    /**
+     * Get full representation of a players profile JSON by the account ID, or undefined if not found
+     * @param accountId Account ID to find
+     * @returns
+     */
+    getFullProfileByAccountId(accountID: string): ISptProfile | undefined;
+    /**
+     * Retrieve a ChatRoomMember formatted profile for the given session ID
+     * @param sessionID The session ID to return the profile for
+     * @returns
+     */
+    getChatRoomMemberFromSessionId(sessionID: string): ISearchFriendResponse | undefined;
+    /**
+     * Retrieve a ChatRoomMember formatted profile for the given PMC profile data
+     * @param pmcProfile The PMC profile data to format into a ChatRoomMember structure
+     * @returns
+     */
+    getChatRoomMemberFromPmcProfile(pmcProfile: IPmcData): ISearchFriendResponse;
     /**
      * Get a PMC profile by its session id
      * @param sessionID Profile id to return
@@ -120,7 +133,7 @@ export declare class ProfileHelper {
      * Get baseline counter values for a fresh profile
      * @returns Default profile Stats object
      */
-    getDefaultCounters(): Stats;
+    getDefaultCounters(): IStats;
     /**
      * is this profile flagged for data removal
      * @param sessionID Profile id
@@ -154,7 +167,7 @@ export declare class ProfileHelper {
      * @param counters Counters to search for key
      * @param keyToIncrement Key
      */
-    incrementStatCounter(counters: CounterKeyValue[], keyToIncrement: string): void;
+    incrementStatCounter(counters: ICounterKeyValue[], keyToIncrement: string): void;
     /**
      * Check if player has a skill at elite level
      * @param skillType Skill to check
@@ -190,12 +203,38 @@ export declare class ProfileHelper {
      * @param rowsToAdd How many rows to give profile
      */
     addStashRowsBonusToProfile(sessionId: string, rowsToAdd: number): void;
-    playerIsFleaBanned(pmcProfile: IPmcData): boolean;
     /**
-     * Add an achievement to player profile
-     * @param pmcProfile Profile to add achievement to
-     * @param achievementId Id of achievement to add
+     * Iterate over all bonuses and sum up all bonuses of desired type in provided profile
+     * @param pmcProfile Player profile
+     * @param desiredBonus Bonus to sum up
+     * @returns Summed bonus value or 0 if no bonus found
      */
-    addAchievementToProfile(pmcProfile: IPmcData, achievementId: string): void;
+    getBonusValueFromProfile(pmcProfile: IPmcData, desiredBonus: BonusType): number;
+    playerIsFleaBanned(pmcProfile: IPmcData): boolean;
     hasAccessToRepeatableFreeRefreshSystem(pmcProfile: IPmcData): boolean;
+    /**
+     * Find a profiles "Pockets" item and replace its tpl with passed in value
+     * @param pmcProfile Player profile
+     * @param newPocketTpl New tpl to set profiles Pockets to
+     */
+    replaceProfilePocketTpl(pmcProfile: IPmcData, newPocketTpl: string): void;
+    /**
+     * Return all quest items current in the supplied profile
+     * @param profile Profile to get quest items from
+     * @returns Array of item objects
+     */
+    getQuestItemsInProfile(profile: IPmcData): IItem[];
+    /**
+     * Return a favorites array in the format expected by the getOtherProfile call
+     * @param profile
+     * @returns An array of IItem objects representing the favorited data
+     */
+    getOtherProfileFavorites(profile: IPmcData): IItem[];
+    /**
+     * Store a hideout customisation unlock inside a profile
+     * @param fullProfile Profile to add unlock to
+     * @param reward reward given to player with customisation data
+     * @param source Source of reward, e.g. "unlockedInGame" for quests and "achievement" for achievements
+     */
+    addHideoutCustomisationUnlock(fullProfile: ISptProfile, reward: IReward, source: CustomisationSource): void;
 }

@@ -1,16 +1,20 @@
-import { OverallCounters, Skills } from "@spt/models/eft/common/tables/IBotBase";
-import { Item } from "@spt/models/eft/common/tables/IItem";
+import { IHideout, IOverallCounters, ISkills } from "@spt/models/eft/common/tables/IBotBase";
+import { IItem } from "@spt/models/eft/common/tables/IItem";
 export interface IGetOtherProfileResponse {
     id: string;
     aid: number;
     info: IOtherProfileInfo;
     customization: IOtherProfileCustomization;
-    skills: Skills;
+    skills: ISkills;
     equipment: IOtherProfileEquipment;
     achievements: Record<string, number>;
-    favoriteItems: string[];
+    favoriteItems: IItem[];
     pmcStats: IOtherProfileStats;
     scavStats: IOtherProfileStats;
+    hideout: IHideout;
+    hideoutAreaStashes: Record<string, string>;
+    customizationStash: string;
+    items: IItem[];
 }
 export interface IOtherProfileInfo {
     nickname: string;
@@ -26,15 +30,16 @@ export interface IOtherProfileCustomization {
     body: string;
     feet: string;
     hands: string;
+    dogtag: string;
 }
 export interface IOtherProfileEquipment {
     Id: string;
-    Items: Item[];
+    Items: IItem[];
 }
 export interface IOtherProfileStats {
     eft: IOtherProfileSubStats;
 }
 export interface IOtherProfileSubStats {
     totalInGameTime: number;
-    overAllCounters: OverallCounters;
+    overAllCounters: IOverallCounters;
 }

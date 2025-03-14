@@ -1,6 +1,6 @@
 import { BotHelper } from "@spt/helpers/BotHelper";
 import { IBotBase } from "@spt/models/eft/common/tables/IBotBase";
-import { ILogger } from "@spt/models/spt/utils/ILogger";
+import type { ILogger } from "@spt/models/spt/utils/ILogger";
 import { LocalisationService } from "@spt/services/LocalisationService";
 import { RandomUtil } from "@spt/utils/RandomUtil";
 export declare class BotGenerationCacheService {
@@ -43,5 +43,7 @@ export declare class BotGenerationCacheService {
      * Does cache have a bot with requested key
      * @returns false if empty
      */
-    cacheHasBotOfRole(key: string): boolean;
+    cacheHasBotWithKey(key: string, size?: number): boolean;
+    getCachedBotCount(key: string): number;
+    createCacheKey(role: string, difficulty: string): string;
 }

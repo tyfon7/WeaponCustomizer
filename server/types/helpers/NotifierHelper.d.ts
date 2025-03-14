@@ -1,5 +1,6 @@
 import { HttpServerHelper } from "@spt/helpers/HttpServerHelper";
-import { Message, MessageContentRagfair } from "@spt/models/eft/profile/ISptProfile";
+import { IMessageContentRagfair } from "@spt/models/eft/profile/IMessageContentRagfair";
+import { IMessage } from "@spt/models/eft/profile/ISptProfile";
 import { IWsChatMessageReceived } from "@spt/models/eft/ws/IWsChatMessageReceived";
 import { IWsNotificationEvent } from "@spt/models/eft/ws/IWsNotificationEvent";
 import { IWsRagfairOfferSold } from "@spt/models/eft/ws/IWsRagfairOfferSold";
@@ -17,12 +18,12 @@ export declare class NotifierHelper {
      * @param ragfairData Ragfair data to attach to notification
      * @returns
      */
-    createRagfairOfferSoldNotification(dialogueMessage: Message, ragfairData: MessageContentRagfair): IWsRagfairOfferSold;
+    createRagfairOfferSoldNotification(dialogueMessage: IMessage, ragfairData: IMessageContentRagfair): IWsRagfairOfferSold;
     /**
      * Create a new notification with the specified dialogueMessage object
      * @param dialogueMessage
      * @returns
      */
-    createNewMessageNotification(dialogueMessage: Message): IWsChatMessageReceived;
+    createNewMessageNotification(dialogueMessage: IMessage): IWsChatMessageReceived;
     getWebSocketServer(sessionID: string): string;
 }

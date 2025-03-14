@@ -1,19 +1,19 @@
-import { DependencyContainer } from "tsyringe";
 import { ModLoadOrder } from "@spt/loaders/ModLoadOrder";
 import { ModTypeCheck } from "@spt/loaders/ModTypeCheck";
-import { ModDetails } from "@spt/models/eft/profile/ISptProfile";
+import { IModDetails } from "@spt/models/eft/profile/ISptProfile";
 import { ICoreConfig } from "@spt/models/spt/config/ICoreConfig";
 import { IModLoader } from "@spt/models/spt/mod/IModLoader";
 import { IPackageJsonData } from "@spt/models/spt/mod/IPackageJsonData";
-import { ILogger } from "@spt/models/spt/utils/ILogger";
+import type { ILogger } from "@spt/models/spt/utils/ILogger";
 import { ConfigServer } from "@spt/servers/ConfigServer";
 import { LocalisationService } from "@spt/services/LocalisationService";
 import { ModCompilerService } from "@spt/services/ModCompilerService";
+import { FileSystemSync } from "@spt/utils/FileSystemSync";
 import { JsonUtil } from "@spt/utils/JsonUtil";
-import { VFS } from "@spt/utils/VFS";
+import { DependencyContainer } from "tsyringe";
 export declare class PreSptModLoader implements IModLoader {
     protected logger: ILogger;
-    protected vfs: VFS;
+    protected fileSystemSync: FileSystemSync;
     protected jsonUtil: JsonUtil;
     protected modCompilerService: ModCompilerService;
     protected localisationService: LocalisationService;
@@ -28,7 +28,7 @@ export declare class PreSptModLoader implements IModLoader {
     protected sptConfig: ICoreConfig;
     protected serverDependencies: Record<string, string>;
     protected skippedMods: Set<string>;
-    constructor(logger: ILogger, vfs: VFS, jsonUtil: JsonUtil, modCompilerService: ModCompilerService, localisationService: LocalisationService, configServer: ConfigServer, modLoadOrder: ModLoadOrder, modTypeCheck: ModTypeCheck);
+    constructor(logger: ILogger, fileSystemSync: FileSystemSync, jsonUtil: JsonUtil, modCompilerService: ModCompilerService, localisationService: LocalisationService, configServer: ConfigServer, modLoadOrder: ModLoadOrder, modTypeCheck: ModTypeCheck);
     load(container: DependencyContainer): Promise<void>;
     /**
      * Returns a list of mods with preserved load order
@@ -36,7 +36,7 @@ export declare class PreSptModLoader implements IModLoader {
      */
     getImportedModsNames(): string[];
     getImportedModDetails(): Record<string, IPackageJsonData>;
-    getProfileModsGroupedByModName(profileMods: ModDetails[]): ModDetails[];
+    getProfileModsGroupedByModName(profileMods: IModDetails[]): IModDetails[];
     getModPath(mod: string): string;
     protected importModsAsync(): Promise<void>;
     protected sortMods(prev: string, next: string, missingFromOrderJSON: Record<string, boolean>): number;
@@ -86,7 +86,6 @@ export declare class PreSptModLoader implements IModLoader {
      * @returns
      */
     protected shouldSkipMod(pkg: IPackageJsonData): boolean;
-    protected autoInstallDependencies(modPath: string, pkg: IPackageJsonData): void;
     protected areModDependenciesFulfilled(pkg: IPackageJsonData, loadedMods: Map<string, IPackageJsonData>): boolean;
     protected isModCompatible(mod: IPackageJsonData, loadedMods: Map<string, IPackageJsonData>): boolean;
     /**

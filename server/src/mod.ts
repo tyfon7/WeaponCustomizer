@@ -2,16 +2,15 @@ import type { DependencyContainer } from "tsyringe";
 
 import type { ItemHelper } from "@spt/helpers/ItemHelper";
 import type { ProfileHelper } from "@spt/helpers/ProfileHelper";
-import type { Item } from "@spt/models/eft/common/tables/IItem";
+import type { IItem } from "@spt/models/eft/common/tables/IItem";
 import type { IPostSptLoadMod } from "@spt/models/external/IPostSptLoadMod";
 import type { IPreSptLoadMod } from "@spt/models/external/IPreSptLoadMod";
 import { LogTextColor } from "@spt/models/spt/logging/LogTextColor";
 import type { ILogger } from "@spt/models/spt/utils/ILogger";
 import type { StaticRouterModService } from "@spt/services/mod/staticRouter/StaticRouterModService";
 import type { ICloner } from "@spt/utils/cloners/ICloner";
-import type { VFS } from "@spt/utils/VFS";
+import type { FileSystem } from "@spt/utils/FileSystem";
 
-import fs from "node:fs";
 import path from "node:path";
 
 type Vector3 = {
@@ -53,14 +52,14 @@ const currentSaveFormatVersion = 2;
 
 class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
     private logger: ILogger;
-    private vfs: VFS;
+    private fileSystem: FileSystem;
     private profileHelper: ProfileHelper;
     private customizations: Customizations = null;
     private filepath: string;
 
     public preSptLoad(container: DependencyContainer): void {
         this.logger = container.resolve<ILogger>("PrimaryLogger");
-        this.vfs = container.resolve<VFS>("VFS");
+        this.fileSystem = container.resolve<FileSystem>("FileSystem");
 
         const staticRouterModService = container.resolve<StaticRouterModService>("StaticRouterModService");
         const cloner = container.resolve<ICloner>("RecursiveCloner");
@@ -89,7 +88,7 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
             (_, itemHelper: ItemHelper) => {
                 const originalReplaceIDs = itemHelper.replaceIDs;
                 itemHelper.replaceIDs = (originalItems, pmcData, insuredItems, fastPanel) => {
-                    const results: Item[] = originalReplaceIDs.call(
+                    const results: IItem[] = originalReplaceIDs.call(
                         itemHelper,
                         originalItems,
                         pmcData,
@@ -151,10 +150,10 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
         return JSON.stringify({ success: true });
     }
 
-    private load() {
+    private async load() {
         try {
-            if (this.vfs.exists(this.filepath)) {
-                const file = JSON.parse(this.vfs.readFile(this.filepath));
+            if (await this.fileSystem.exists(this.filepath)) {
+                const file = await this.fileSystem.readJson(this.filepath);
                 switch (file.version) {
                     case undefined:
                         this.customizations = this.convertV1ToCurrent(file);
@@ -167,9 +166,8 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
                         throw "Unknown file version!";
                 }
             } else {
-                // Create the file with fs - vfs.writeFile pukes on windows paths if it needs to create the file
                 this.customizations = {};
-                fs.writeFileSync(this.filepath, JSON.stringify(this.customizations));
+                this.save();
             }
         } catch (error) {
             this.logger.error("WeaponCustomizer: Failed to load weapon customizations! " + error);
@@ -235,7 +233,7 @@ class WeaponCustomizer implements IPreSptLoadMod, IPostSptLoadMod {
         };
 
         try {
-            await this.vfs.writeFileAsync(this.filepath, JSON.stringify(file, null, 2));
+            await this.fileSystem.writeJson(this.filepath, file, 2);
         } catch (error) {
             this.logger.error("WeaponCustomizer: Failed to save weapon customizations! " + error);
         }

@@ -92,7 +92,7 @@ public static class EditPatches
         [PatchPostfix]
         public static void Postfix(
             Slot slot,
-            GInterface444 moddingScreen,
+            GInterface453 moddingScreen,
             CompoundItem item,
             Transform modBone,
             Image ____boneIcon)
@@ -201,7 +201,7 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("Assemble") != null); // GClass3188
+            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("Assemble") != null); // GClass3259
             return AccessTools.Method(type, "Assemble");
         }
 
@@ -222,7 +222,7 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("CheckIfAlreadyBuilt") != null); // GClass3188
+            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("CheckIfAlreadyBuilt") != null); // GClass3259
             return AccessTools.Method(type, "CheckIfAlreadyBuilt");
         }
 
@@ -344,7 +344,7 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(GClass3437), nameof(GClass3437.IsActive));
+            return AccessTools.Method(typeof(ContextInteractionSwitcher), nameof(ContextInteractionSwitcher.IsActive));
         }
 
         [PatchPostfix]
@@ -366,7 +366,7 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(GClass3437), nameof(GClass3437.IsInteractive));
+            return AccessTools.Method(typeof(ContextInteractionSwitcher), nameof(ContextInteractionSwitcher.IsInteractive));
         }
 
         [PatchPostfix]
@@ -401,7 +401,7 @@ public static class EditPatches
         [PatchPrefix]
         public static bool Prefix(ItemUiContext __instance, Item item, InventoryController ___inventoryController_0)
         {
-            new WeaponModdingScreen.GClass3561(item, ___inventoryController_0, __instance.CompoundItem_0).ShowScreen(EScreenState.Queued);
+            new WeaponModdingScreen.GClass3632(item, ___inventoryController_0, __instance.CompoundItem_0).ShowScreen(EScreenState.Queued);
             return false;
         }
     }

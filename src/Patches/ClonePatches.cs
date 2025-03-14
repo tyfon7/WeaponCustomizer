@@ -21,7 +21,7 @@ public static class ClonePatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("IncompatibleByMalfunction") != null); // GClass3105
+            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("IncompatibleByMalfunction") != null); // GClass3176
             return type.GetMethods(BindingFlags.Public | BindingFlags.Static).Single(m =>
             {
                 var parameters = m.GetParameters();

@@ -4,15 +4,15 @@
     <TargetFramework>net471</TargetFramework>
     <AssemblyName>Tyfon.WeaponCustomizer</AssemblyName>
     <Description>SPT Weapon Customizer</Description>
-    <Version>1.4.0</Version>
+    <Version>2.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
   <PropertyGroup>
-    <SPTPath Condition="'$(Configuration)'=='Debug'">..\..\..\..\SPT\3.10-be</SPTPath>
-    <SPTPath Condition="'$(Configuration)'=='Release'">..\..\..\..\SPT\3.10</SPTPath>
+    <SPTPath Condition="'$(Configuration)'=='Debug'">..\..\..\..\SPT\3.11</SPTPath>
+    <SPTPath Condition="'$(Configuration)'=='Release'">..\..\..\..\SPT\3.11</SPTPath>
   </PropertyGroup>
 
   <ItemGroup>

@@ -25,9 +25,8 @@ public static class ApplyPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            // GClass735.GClass736
-            Type ccvType = AccessTools.Field(typeof(Player.FirearmController), nameof(Player.FirearmController.CCV)).FieldType;
-            Type type = AccessTools.Field(ccvType, nameof(Player.FirearmController.CCV.ContainerBones)).FieldType.GenericTypeArguments[1];
+            Type ccvType = AccessTools.Field(typeof(Player.FirearmController), nameof(Player.FirearmController.CCV)).FieldType; // GClass746
+            Type type = AccessTools.Field(ccvType, nameof(Player.FirearmController.CCV.ContainerBones)).FieldType.GenericTypeArguments[1]; // GClass746.GClass747
 
             return AccessTools.Method(type, "InsertItem");
         }
@@ -67,7 +66,7 @@ public static class ApplyPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(PoolManager), nameof(PoolManager.CreateItemAsync));
+            return AccessTools.Method(typeof(PoolManagerClass), nameof(PoolManagerClass.CreateItemAsync));
         }
 
         [PatchPostfix]
@@ -94,7 +93,7 @@ public static class ApplyPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("GetItemHash") != null); // GClass896
+            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("GetItemHash") != null); // GClass906
             return AccessTools.Method(type, "GetItemHash");
         }
 

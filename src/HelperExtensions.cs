@@ -72,7 +72,7 @@ public static class HelperExtensions
         slots[slotId] = customPosition;
 
         // Only save the actual guns, not copies in the edit build screen
-        if (weapon.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
+        if (weapon.Owner?.ID == MainProfileId)
         {
             Customizations.Save(weapon, slots);
         }
@@ -87,7 +87,7 @@ public static class HelperExtensions
             Customizations.Database.Remove(weapon.Id);
 
             // Only save the actual guns, not copies in the edit build screen
-            if (weapon.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
+            if (weapon.Owner?.ID == MainProfileId)
             {
                 Customizations.Save(weapon, null);
             }
@@ -106,7 +106,7 @@ public static class HelperExtensions
             }
 
             // Only save the actual guns, not copies in the edit build screen
-            if (weapon.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
+            if (weapon.Owner?.ID == MainProfileId)
             {
                 Customizations.Save(weapon, slots);
             }
@@ -130,7 +130,7 @@ public static class HelperExtensions
         }
 
         // Only save the actual guns, not copies in the edit build screen
-        if (to.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
+        if (to.Owner?.ID == MainProfileId)
         {
             Customizations.Save(to, slots);
         }
@@ -161,7 +161,7 @@ public static class HelperExtensions
         }
 
         // Only save the actual guns, not copies in the edit build screen
-        if (to.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
+        if (to.Owner?.ID == MainProfileId)
         {
             Customizations.Save(to, slots);
         }
@@ -177,7 +177,7 @@ public static class HelperExtensions
         }
 
         // Only save the actual guns, not copies in the edit build screen
-        if (to.Owner?.ID == PatchConstants.BackEndSession.Profile.Id)
+        if (to.Owner?.ID == MainProfileId)
         {
             Customizations.Save(to, slots);
         }
@@ -247,5 +247,10 @@ public static class HelperExtensions
         }
 
         return customizations.Count == otherCustomizations.Count && !customizations.Except(otherCustomizations).Any();
+    }
+
+    private static string MainProfileId
+    {
+        get { return PatchConstants.BackEndSession?.Profile?.Id ?? "_error_no_profile_id_yet"; }
     }
 }

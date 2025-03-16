@@ -15,6 +15,10 @@ By default, movement will be along the same axis as the gun - from the muzzle to
 
 These secondary directions _usually_ don't make any sense but occasionally you may find an attachment that needs these adjustments.
 
+#### Rotating
+
+You can also rotate attachments by holding ALT while moving your mouse from left to right. You can change which axis is rotating by holding SHIFT or CTRL at the same time.
+
 #### Resetting
 
 You can reset an attachment to its default position by right clicking the dot, or reset all attachments by clicking "Revert" in the upper right corner.
@@ -43,7 +47,7 @@ These options are available in the F12 menu.
 
 ### Foregrips
 
-You can adjust foregrips forward and backwards. The operator's hand will stay on the grip.
+You can adjust foregrips forward and backwards. The operator's hand will stay on the grip. Be aware that rotating a grip will also rotate the operator's hand, which can cause unintended weirdness.
 
 ### Tactical devices
 

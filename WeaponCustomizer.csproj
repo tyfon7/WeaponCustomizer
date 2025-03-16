@@ -11,8 +11,7 @@
   </PropertyGroup>
 
   <PropertyGroup>
-    <SPTPath Condition="'$(Configuration)'=='Debug'">..\..\..\..\SPT\3.11</SPTPath>
-    <SPTPath Condition="'$(Configuration)'=='Release'">..\..\..\..\SPT\3.11</SPTPath>
+    <SPTPath>..\..\..\..\SPT\3.11</SPTPath>
   </PropertyGroup>
 
   <ItemGroup>

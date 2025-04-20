@@ -348,9 +348,9 @@ public static class EditPatches
         }
 
         [PatchPostfix]
-        public static void Postfix(EItemInfoButton button, ref bool __result)
+        public static void Postfix(ContextInteractionSwitcher __instance, EItemInfoButton button, ref bool __result)
         {
-            if (Settings.ModifyRaidWeapons.Value == ModRaidWeapon.Never)
+            if (__instance.item_0 is not Weapon || Settings.ModifyRaidWeapons.Value == ModRaidWeapon.Never)
             {
                 return;
             }

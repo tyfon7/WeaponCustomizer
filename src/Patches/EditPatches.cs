@@ -92,13 +92,39 @@ public static class EditPatches
         [PatchPostfix]
         public static void Postfix(
             Slot slot,
-            GInterface453 moddingScreen,
+            ModdingScreen moddingScreen,
             CompoundItem item,
             Transform modBone,
             Image ____boneIcon)
         {
-            if (item is not Weapon weapon || (!Settings.MoveEverything.Value && !MovableMods.Contains(modBone.name)))
+            if (item is not Weapon weapon)
             {
+                return;
+            }
+
+            if (!Settings.MoveEverything.Value && !MovableMods.Contains(modBone.name))
+            {
+                // May need to clean up if the draggable bone was already created
+                var draggableBone = ____boneIcon.GetComponent<DraggableBone>();
+                if (draggableBone != null)
+                {
+                    draggableBone.Reset();
+                    UnityEngine.Object.Destroy(draggableBone);
+                }
+                else
+                {
+                    // Or if the mod was customized (otherwise there is no way to reset it)
+                    var customizedMod = modBone.GetComponent<CustomizedMod>();
+                    if (customizedMod != null)
+                    {
+                        customizedMod.Reset();
+                        UnityEngine.Object.Destroy(customizedMod);
+                    }
+
+                    weapon.ResetCustomization(slot.FullId);
+                    OnModMoved(weapon, moddingScreen);
+                }
+
                 return;
             }
 
@@ -117,24 +143,29 @@ public static class EditPatches
                     UpdatePositionsMethod.Invoke(moddingScreen, []);
                     if (done)
                     {
-                        EditBuildScreen editBuildScreen = moddingScreen as EditBuildScreen;
-                        editBuildScreen?.CheckForVitalParts(); // Triggers assemble button
-
-                        if (weapon.IsCustomized())
-                        {
-                            RevertButton.ShowGameObject();
-                        }
-                        else
-                        {
-                            RevertButton.HideGameObject();
-                        }
-
-                        if (editBuildScreen != null && !weapon.CustomizationsMatch(PresetField.GetValue(editBuildScreen) as Preset))
-                        {
-                            editBuildScreen.method_34(); // Mark build as dirty
-                        }
+                        OnModMoved(weapon, moddingScreen);
                     }
                 });
+        }
+
+        private static void OnModMoved(Weapon weapon, ModdingScreen moddingScreen)
+        {
+            EditBuildScreen editBuildScreen = moddingScreen as EditBuildScreen;
+            editBuildScreen?.CheckForVitalParts(); // Triggers assemble button
+
+            if (weapon.IsCustomized())
+            {
+                RevertButton.ShowGameObject();
+            }
+            else
+            {
+                RevertButton.HideGameObject();
+            }
+
+            if (editBuildScreen != null && !weapon.CustomizationsMatch(PresetField.GetValue(editBuildScreen) as Preset))
+            {
+                editBuildScreen.method_34(); // Mark build as dirty
+            }
         }
     }
 

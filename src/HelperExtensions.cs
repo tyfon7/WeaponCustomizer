@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using EFT.InventoryLogic;
 using SPT.Reflection.Utils;
 
@@ -32,8 +33,9 @@ public static class HelperExtensions
         return false;
     }
 
-    public static bool IsCustomized(this Weapon weapon, string slotId, out Customization customPosition)
+    public static bool IsCustomized(this Weapon weapon, Slot slot, out Customization customPosition)
     {
+        string slotId = GetFullSlotId(slot);
         if (Customizations.Database.TryGetValue(weapon.Id, out var slots) &&
             slots.TryGetValue(slotId, out customPosition))
         {
@@ -44,8 +46,9 @@ public static class HelperExtensions
         return false;
     }
 
-    public static bool IsCustomized(this Preset preset, string slotId, out Customization customPosition)
+    public static bool IsCustomized(this Preset preset, Slot slot, out Customization customPosition)
     {
+        string slotId = GetFullSlotId(slot);
         if (Customizations.Database.TryGetValue(preset.Id, out var slots) &&
             slots.TryGetValue(slotId, out customPosition))
         {
@@ -56,11 +59,12 @@ public static class HelperExtensions
         return false;
     }
 
-    public static void SetCustomization(this Weapon weapon, string slotId, Customization customPosition)
+    public static void SetCustomization(this Weapon weapon, Slot slot, Customization customPosition)
     {
+        string slotId = GetFullSlotId(slot);
         if (!customPosition.Position.HasValue && !customPosition.Rotation.HasValue)
         {
-            weapon.ResetCustomization(slotId);
+            weapon.ResetCustomization(slot);
             return;
         }
 
@@ -94,10 +98,11 @@ public static class HelperExtensions
         }
     }
 
-    public static void ResetCustomization(this Weapon weapon, string slotId)
+    public static void ResetCustomization(this Weapon weapon, Slot slot)
     {
         if (Customizations.Database.TryGetValue(weapon.Id, out var slots))
         {
+            string slotId = GetFullSlotId(slot);
             slots.Remove(slotId);
             if (slots.Count == 0)
             {
@@ -247,6 +252,42 @@ public static class HelperExtensions
         }
 
         return customizations.Count == otherCustomizations.Count && !customizations.Except(otherCustomizations).Any();
+    }
+
+    private static string GetFullSlotId(Slot slot)
+    {
+        StringBuilder sb = new();
+        Stack<Slot> slots = new();
+
+        slots.Push(slot);
+
+        foreach (var item in slot.ParentItem.GetAllParentItemsAndSelf(true))
+        {
+            if (item is Weapon)
+            {
+                break;
+            }
+
+            if (item.CurrentAddress is not SlotAddress slotAddress)
+            {
+                // wtf??
+                Plugin.Instance.Logger.LogError("Slot item hierarchy doesn't have a slot address!??");
+                break;
+            }
+
+            slots.Push(slotAddress.Slot);
+        }
+
+        while (slots.Any())
+        {
+            sb.Append("/");
+            sb.Append(slots.Pop().ID);
+        }
+
+        sb.Append(" ");
+        sb.Append(slot.ParentItem.TemplateId);
+
+        return sb.ToString();
     }
 
     private static string MainProfileId

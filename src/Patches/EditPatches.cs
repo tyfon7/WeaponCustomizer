@@ -121,7 +121,7 @@ public static class EditPatches
                         UnityEngine.Object.Destroy(customizedMod);
                     }
 
-                    weapon.ResetCustomization(slot.FullId);
+                    weapon.ResetCustomization(slot);
                     OnModMoved(weapon, moddingScreen);
                 }
 
@@ -136,7 +136,7 @@ public static class EditPatches
                 ____boneIcon,
                 modBone,
                 weapon,
-                slot.FullId,
+                slot,
                 viewporter,
                 (done) =>
                 {

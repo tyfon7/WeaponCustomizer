@@ -44,7 +44,7 @@ public static class ApplyPatches
                 return;
             }
 
-            if (weapon.IsCustomized(parentSlot.FullId, out Customization customization))
+            if (weapon.IsCustomized(parentSlot, out Customization customization))
             {
                 ___Bone.gameObject.GetOrAddComponent<CustomizedMod>().Init(customization);
             }

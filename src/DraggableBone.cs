@@ -18,7 +18,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     private Transform mod;
     private CustomizedMod customizedMod;
     private Weapon weapon;
-    private string slotId;
+    private Slot slot;
     private CameraViewporter viewporter;
     private Transform rotator;
     private Action<bool> onChange;
@@ -37,12 +37,12 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     private bool hovered;
     private bool rotating;
 
-    public void Init(Image boneIcon, Transform mod, Weapon weapon, string slotId, CameraViewporter viewporter, Action<bool> onChange)
+    public void Init(Image boneIcon, Transform mod, Weapon weapon, Slot slot, CameraViewporter viewporter, Action<bool> onChange)
     {
         this.boneIcon = boneIcon;
         this.mod = mod;
         this.weapon = weapon;
-        this.slotId = slotId;
+        this.slot = slot;
         this.viewporter = viewporter;
         this.onChange = onChange;
 
@@ -90,7 +90,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
             Destroy(customizedMod);
             customizedMod = null;
 
-            weapon.ResetCustomization(slotId);
+            weapon.ResetCustomization(slot);
             onChange(true);
         }
     }
@@ -239,7 +239,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
         rotating = false;
         SetColor();
 
-        weapon.SetCustomization(slotId, customizedMod.Customization);
+        weapon.SetCustomization(slot, customizedMod.Customization);
 
         onChange(true);
     }

@@ -3,26 +3,29 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.9.34723.18
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{b564f039-d349-4612-8662-d4233f60e3c7}") = "WeaponCustomizer", "WeaponCustomizer.csproj", "{b9777e1a-581c-4a81-895e-27c97cf96cdf}"
+Project("{B564F039-D349-4612-8662-D4233F60E3C7}") = "WeaponCustomizer", "WeaponCustomizer.csproj", "{B9777E1A-581C-4A81-895E-27C97CF96CDF}"
+EndProject
+Project("{BE20C66C-BC51-4882-B00D-AF90FD5067AC}") = "WeaponCustomizer.Server", "WeaponCustomizer.Server\WeaponCustomizer.Server.csproj", "{DB5A125C-2656-46A1-BAB3-C90A3531FD5B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
-		Dist|Any CPU = Dist|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{b9777e1a-581c-4a81-895e-27c97cf96cdf}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{b9777e1a-581c-4a81-895e-27c97cf96cdf}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{b9777e1a-581c-4a81-895e-27c97cf96cdf}.Dist|Any CPU.ActiveCfg = Dist|Any CPU
-		{b9777e1a-581c-4a81-895e-27c97cf96cdf}.Dist|Any CPU.Build.0 = Dist|Any CPU
-		{b9777e1a-581c-4a81-895e-27c97cf96cdf}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{b9777e1a-581c-4a81-895e-27c97cf96cdf}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B9777E1A-581C-4A81-895E-27C97CF96CDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B9777E1A-581C-4A81-895E-27C97CF96CDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B9777E1A-581C-4A81-895E-27C97CF96CDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B9777E1A-581C-4A81-895E-27C97CF96CDF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB5A125C-2656-46A1-BAB3-C90A3531FD5B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB5A125C-2656-46A1-BAB3-C90A3531FD5B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB5A125C-2656-46A1-BAB3-C90A3531FD5B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB5A125C-2656-46A1-BAB3-C90A3531FD5B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {9dcc2809-67bb-4e6a-b0d6-8f9475945f07}
+		SolutionGuid = {9DCC2809-67BB-4E6A-B0D6-8F9475945F07}
 	EndGlobalSection
 EndGlobal

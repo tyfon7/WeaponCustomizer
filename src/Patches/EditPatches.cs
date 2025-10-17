@@ -61,7 +61,7 @@ public static class EditPatches
 
     public static void Enable()
     {
-        PresetField = AccessTools.GetDeclaredFields(typeof(EditBuildScreen)).Single(f => f.FieldType == typeof(Preset));
+        PresetField = AccessTools.GetDeclaredFields(typeof(EditBuildScreen)).Single(f => f.FieldType == typeof(WeaponBuildClass));
 
         new BoneMoverPatch().Enable();
         new RevertButtonPatch().Enable();
@@ -162,7 +162,7 @@ public static class EditPatches
                 RevertButton.HideGameObject();
             }
 
-            if (editBuildScreen != null && !weapon.CustomizationsMatch(PresetField.GetValue(editBuildScreen) as Preset))
+            if (editBuildScreen != null && !weapon.CustomizationsMatch(PresetField.GetValue(editBuildScreen) as WeaponBuildClass))
             {
                 editBuildScreen.method_34(); // Mark build as dirty
             }
@@ -292,7 +292,7 @@ public static class EditPatches
                 return;
             }
 
-            var preset = PresetField.GetValue(__instance) as Preset;
+            var preset = PresetField.GetValue(__instance) as WeaponBuildClass;
             if (preset == null)
             {
                 return;
@@ -312,7 +312,7 @@ public static class EditPatches
         }
 
         [PatchPostfix]
-        public static void Postfix(Item item, ref Preset __result)
+        public static void Postfix(Item item, ref WeaponBuildClass __result)
         {
             if (__result == null || item is not Weapon weapon)
             {
@@ -337,7 +337,7 @@ public static class EditPatches
         }
 
         [PatchPostfix]
-        public static void Postfix(Preset build)
+        public static void Postfix(WeaponBuildClass build)
         {
             if (build.Item is not Weapon weapon)
             {
@@ -356,13 +356,13 @@ public static class EditPatches
         }
 
         [PatchPrefix]
-        public static void Prefix(WeaponBuildsStorageClass __instance, MongoID buildId, ref Preset __state)
+        public static void Prefix(WeaponBuildsStorageClass __instance, MongoID buildId, ref WeaponBuildClass __state)
         {
             __instance.Dictionary_0.TryGetValue(buildId, out __state);
         }
 
         [PatchPostfix]
-        public static async void Postfix(Task<IResult> __result, Preset __state)
+        public static async void Postfix(Task<IResult> __result, WeaponBuildClass __state)
         {
             if (__state != null && (await __result).Succeed)
             {
@@ -375,13 +375,13 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(ContextInteractionSwitcher), nameof(ContextInteractionSwitcher.IsActive));
+            return AccessTools.Method(typeof(ContextInteractionSwitcherClass), nameof(ContextInteractionSwitcherClass.IsActive));
         }
 
         [PatchPostfix]
-        public static void Postfix(ContextInteractionSwitcher __instance, EItemInfoButton button, ref bool __result)
+        public static void Postfix(ContextInteractionSwitcherClass __instance, EItemInfoButton button, ref bool __result)
         {
-            if (__instance.item_0 is not Weapon || Settings.ModifyRaidWeapons.Value == ModRaidWeapon.Never)
+            if (__instance.Item_0_1 is not Weapon || Settings.ModifyRaidWeapons.Value == ModRaidWeapon.Never)
             {
                 return;
             }
@@ -397,15 +397,15 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(ContextInteractionSwitcher), nameof(ContextInteractionSwitcher.IsInteractive));
+            return AccessTools.Method(typeof(ContextInteractionSwitcherClass), nameof(ContextInteractionSwitcherClass.IsInteractive));
         }
 
         [PatchPostfix]
-        public static void Postfix(EItemInfoButton button, ref IResult __result, Item ___item_0, TraderControllerClass ___traderControllerClass)
+        public static void Postfix(ContextInteractionSwitcherClass __instance, EItemInfoButton button, ref IResult __result)
         {
-            if (button == EItemInfoButton.Modding && Plugin.InRaid() && ___traderControllerClass is InventoryController inventoryController)
+            if (button == EItemInfoButton.Modding && Plugin.InRaid() && __instance.TraderControllerClass is InventoryController inventoryController)
             {
-                if (inventoryController.ID == ___item_0.Owner.ID && inventoryController.IsItemEquipped(___item_0))
+                if (inventoryController.ID == __instance.Item_0_1.Owner.ID && inventoryController.IsItemEquipped(__instance.Item_0_1))
                 {
                     __result = new FailedResult("You can't edit equipped weapon");
                     return;
@@ -432,7 +432,7 @@ public static class EditPatches
         [PatchPrefix]
         public static bool Prefix(ItemUiContext __instance, Item item, InventoryController ___inventoryController_0)
         {
-            new WeaponModdingScreen.GClass3632(item, ___inventoryController_0, __instance.CompoundItem_0).ShowScreen(EScreenState.Queued);
+            new WeaponModdingScreen.GClass3922(item, ___inventoryController_0, __instance.CompoundItem_0).ShowScreen(EScreenState.Queued);
             return false;
         }
     }

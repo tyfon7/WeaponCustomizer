@@ -20,7 +20,7 @@ public static class Customizations
         Save(weapon.Id, CustomizationType.Weapon, weapon.ShortName.Localized(), slots);
     }
 
-    public static void Save(Preset preset, Dictionary<string, Customization> slots)
+    public static void Save(WeaponBuildClass preset, Dictionary<string, Customization> slots)
     {
         Save(preset.Id, CustomizationType.Preset, preset.HandbookName, slots);
     }
@@ -62,7 +62,7 @@ public static class Customizations
                     try
                     {
                         string json = JsonConvert.SerializeObject(
-                            SaveList.ToArray(),
+                            new SaveRequestData() { data = SaveList.ToArray() },
                             Formatting.None,
                             new JsonSerializerSettings
                             {
@@ -104,6 +104,11 @@ public static class Customizations
             Plugin.Instance.Logger.LogError("Failed to load: " + ex.ToString());
             NotificationManagerClass.DisplayWarningNotification("Failed to load Weapon Customizations - check the server");
         }
+    }
+
+    private struct SaveRequestData
+    {
+        public CustomizedObject[] data;
     }
 
     private struct CustomizedObject

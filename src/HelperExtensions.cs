@@ -23,7 +23,7 @@ public static class HelperExtensions
         return false;
     }
 
-    public static bool IsCustomized(this Preset preset, out Dictionary<string, Customization> slots)
+    public static bool IsCustomized(this WeaponBuildClass preset, out Dictionary<string, Customization> slots)
     {
         if (Customizations.Database.TryGetValue(preset.Id, out slots))
         {
@@ -46,7 +46,7 @@ public static class HelperExtensions
         return false;
     }
 
-    public static bool IsCustomized(this Preset preset, Slot slot, out Customization customPosition)
+    public static bool IsCustomized(this WeaponBuildClass preset, Slot slot, out Customization customPosition)
     {
         string slotId = GetFullSlotId(slot);
         if (Customizations.Database.TryGetValue(preset.Id, out var slots) &&
@@ -172,7 +172,7 @@ public static class HelperExtensions
         }
     }
 
-    public static void ApplyCustomizations(this Preset preset, Weapon to)
+    public static void ApplyCustomizations(this WeaponBuildClass preset, Weapon to)
     {
         Customizations.Database.Remove(to.Id);
         if (Customizations.Database.TryGetValue(preset.Id, out var slots))
@@ -188,7 +188,7 @@ public static class HelperExtensions
         }
     }
 
-    public static void SaveAsPreset(this Weapon weapon, Preset preset)
+    public static void SaveAsPreset(this Weapon weapon, WeaponBuildClass preset)
     {
         Customizations.Database.Remove(preset.Id);
         if (Customizations.Database.TryGetValue(weapon.Id, out var slots))
@@ -200,7 +200,7 @@ public static class HelperExtensions
         Customizations.Save(preset, slots);
     }
 
-    public static void RemoveCustomizations(this Preset preset)
+    public static void RemoveCustomizations(this WeaponBuildClass preset)
     {
         if (Customizations.Database.Remove(preset.Id))
         {
@@ -231,7 +231,7 @@ public static class HelperExtensions
         return customizations.Count == otherCustomizations.Count && !customizations.Except(otherCustomizations).Any();
     }
 
-    public static bool CustomizationsMatch(this Weapon weapon, Preset preset)
+    public static bool CustomizationsMatch(this Weapon weapon, WeaponBuildClass preset)
     {
         if (weapon == null || preset == null)
         {

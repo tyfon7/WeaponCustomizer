@@ -1,17 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net471</TargetFramework>
+    <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>Tyfon.WeaponCustomizer</AssemblyName>
     <Description>SPT Weapon Customizer</Description>
-    <Version>2.0.1</Version>
+    <Version>3.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 
   <PropertyGroup>
-    <SPTPath>..\..\..\..\SPT\3.11</SPTPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);WeaponCustomizer.Server\**</DefaultItemExcludes>
+  </PropertyGroup>
+
+  <PropertyGroup>
+    <SPTPath>..\..\..\..\SPT\4.0</SPTPath>
   </PropertyGroup>
 
   <ItemGroup>
@@ -108,10 +112,6 @@
   <Target Name="PostBuildRelease" AfterTargets="PostBuildEvent"
     Condition="'$(Configuration)'=='Release'">
     <Exec
-      Command='
-        mkdir "$(ProjectDir)dist\BepInEx\plugins"
-        7z a -tzip dist\$(TargetName.Replace(".", "-"))-$(Version).zip $(SolutionDir)dist\BepInEx $(SolutionDir)dist\user
-      '
-    />
+      Command='7z a -tzip dist\$(TargetName.Replace(".", "-"))-$(Version).zip $(SolutionDir)dist\BepInEx $(SolutionDir)dist\SPT' />
   </Target>
 </Project>

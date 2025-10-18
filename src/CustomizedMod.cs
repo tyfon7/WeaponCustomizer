@@ -23,9 +23,9 @@ public class CustomizedMod : MonoBehaviour
     public void Init(Customization customization)
     {
         Customization = new(
-            customization.OriginalPosition ?? transform.localPosition,
+            customization.OriginalPosition ?? Customization.OriginalPosition ?? transform.localPosition,
             customization.Position,
-            customization.OriginalRotation ?? transform.localRotation,
+            customization.OriginalRotation ?? Customization.OriginalRotation ?? transform.localRotation,
             customization.Rotation
         );
 

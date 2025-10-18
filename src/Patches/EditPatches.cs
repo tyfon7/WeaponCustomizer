@@ -121,8 +121,11 @@ public static class EditPatches
                         UnityEngine.Object.Destroy(customizedMod);
                     }
 
-                    weapon.ResetCustomization(slot);
-                    OnModMoved(weapon, moddingScreen);
+                    if (weapon.IsCustomized(slot, out _))
+                    {
+                        weapon.ResetCustomization(slot);
+                        OnModMoved(weapon, moddingScreen);
+                    }
                 }
 
                 return;

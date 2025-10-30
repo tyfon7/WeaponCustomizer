@@ -43,7 +43,7 @@ public class ReplaceIdsPatch : AbstractPatch
                 weaponCustomizer.Database[newItem.Id] = cloner.Clone(customizedObject);
                 dirty = true;
 
-                logger.Info($"WeaponCustomizer: weapon {originalItem.Id} is now {newItem.Id}, customizations copied");
+                logger.Debug($"WeaponCustomizer: weapon {originalItem.Id} is now {newItem.Id}, customizations copied");
             }
         }
 

@@ -146,7 +146,7 @@ public class WeaponCustomizer(
 
         if (dirtyCount > 0)
         {
-            logger.Info($"WeaponCustomizer: Cleaned up {dirtyCount} customizations for weapons/presets that no longer exist");
+            logger.Debug($"WeaponCustomizer: Cleaned up {dirtyCount} customizations for weapons/presets that no longer exist");
             await Save();
         }
     }

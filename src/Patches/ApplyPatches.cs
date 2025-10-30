@@ -93,7 +93,7 @@ public static class ApplyPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("GetItemHash") != null); // GClass906
+            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("GetItemHash") != null); // GClass928
             return AccessTools.Method(type, "GetItemHash");
         }
 

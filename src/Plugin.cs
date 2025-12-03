@@ -5,7 +5,7 @@ using EFT;
 
 namespace WeaponCustomizer;
 
-[BepInPlugin(PluginInfo.PLUGIN_GUID, PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
+[BepInPlugin("com.tyfon.weaponcustomizer", PluginInfo.PLUGIN_NAME, PluginInfo.PLUGIN_VERSION)]
 public class Plugin : BaseUnityPlugin
 {
     public static Plugin Instance;

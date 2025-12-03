@@ -7,8 +7,8 @@
     <AssemblyName>Tyfon.WeaponCustomizer</AssemblyName>
     <Description>SPT Weapon Customizer</Description>
     <SPTModType>Client</SPTModType>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
+    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <Configurations>Debug;Release</Configurations>
   </PropertyGroup>
 

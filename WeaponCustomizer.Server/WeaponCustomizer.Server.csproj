@@ -6,7 +6,6 @@
     <TargetFramework>net9.0</TargetFramework>
     <AssemblyName>Tyfon.WeaponCustomizer.Server</AssemblyName>
     <SPTModType>Server</SPTModType>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <LangVersion>latest</LangVersion>
     <OutputType>Library</OutputType>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
@@ -14,10 +13,10 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="SPTarkov.Common" Version="4.0.1" />
-    <PackageReference Include="SPTarkov.DI" Version="4.0.1" />
-    <PackageReference Include="SPTarkov.Reflection" Version="4.0.1" />
-    <PackageReference Include="SPTarkov.Server.Core" Version="4.0.1" />
+    <PackageReference Include="SPTarkov.Common" Version="4.0.0" />
+    <PackageReference Include="SPTarkov.DI" Version="4.0.0" />
+    <PackageReference Include="SPTarkov.Reflection" Version="4.0.0" />
+    <PackageReference Include="SPTarkov.Server.Core" Version="4.0.0" />
   </ItemGroup>
 
 </Project>

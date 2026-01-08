@@ -2,6 +2,11 @@
   <PropertyGroup>
     <Version>3.0.2</Version>
     <SPTPath>$(MSBuildThisFileDirectory)..\..\..\..\SPT\4.0</SPTPath>
+    <AssemblySearchPaths>
+      $(SPTPath)\EscapeFromTarkov_Data\Managed;
+      $(SPTPath)\BepInEx\plugins\spt;
+      $(AssemblySearchPaths)
+    </AssemblySearchPaths>
   </PropertyGroup>
 
   <ItemGroup>

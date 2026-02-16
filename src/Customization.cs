@@ -1,3 +1,4 @@
+using Newtonsoft.Json;
 using UnityEngine;
 
 namespace WeaponCustomizer;
@@ -31,39 +32,54 @@ public struct Customization(Vector3 originalPosition, Vector3? position, Quatern
 
 public struct CustomizationJson
 {
-    public Vector3Json? position;
-    public QuaternionJson? rotation;
+    [JsonProperty("position")]
+    public Vector3Json? Position;
+
+    [JsonProperty("rotation")]
+    public QuaternionJson? Rotation;
 
     public static implicit operator CustomizationJson(Customization c) => new()
     {
-        position = c.Position,
-        rotation = c.Rotation,
+        Position = c.Position,
+        Rotation = c.Rotation,
     };
 
     public static implicit operator Customization(CustomizationJson c) => new()
     {
-        Position = c.position,
-        Rotation = c.rotation,
+        Position = c.Position,
+        Rotation = c.Rotation,
     };
 }
 
 public struct Vector3Json
 {
-    public float x;
-    public float y;
-    public float z;
+    [JsonProperty("x")]
+    public float X;
 
-    public static implicit operator Vector3Json(Vector3 v) => new() { x = v.x, y = v.y, z = v.z };
-    public static implicit operator Vector3(Vector3Json v) => new(v.x, v.y, v.z);
+    [JsonProperty("y")]
+    public float Y;
+
+    [JsonProperty("z")]
+    public float Z;
+
+    public static implicit operator Vector3Json(Vector3 v) => new() { X = v.x, Y = v.y, Z = v.z };
+    public static implicit operator Vector3(Vector3Json v) => new(v.X, v.Y, v.Z);
 }
 
 public struct QuaternionJson
 {
-    public float w;
-    public float x;
-    public float y;
-    public float z;
+    [JsonProperty("w")]
+    public float W;
 
-    public static implicit operator QuaternionJson(Quaternion q) => new() { w = q.w, x = q.x, y = q.y, z = q.z };
-    public static implicit operator Quaternion(QuaternionJson q) => new(q.x, q.y, q.z, q.w);
+    [JsonProperty("x")]
+    public float X;
+
+    [JsonProperty("y")]
+    public float Y;
+
+    [JsonProperty("z")]
+    public float Z;
+
+    public static implicit operator QuaternionJson(Quaternion q) => new() { W = q.w, X = q.x, Y = q.y, Z = q.z };
+    public static implicit operator Quaternion(QuaternionJson q) => new(q.X, q.Y, q.Z, q.W);
 }

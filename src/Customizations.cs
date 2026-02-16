@@ -29,17 +29,17 @@ public static class Customizations
     {
         CustomizedObject customizedObject = new()
         {
-            id = id,
-            type = type,
-            name = name,
-            slots = []
+            Id = id,
+            Type = type,
+            Name = name,
+            Slots = []
         };
 
         if (slots != null)
         {
             foreach (var (slotId, customization) in slots)
             {
-                customizedObject.slots[slotId] = customization;
+                customizedObject.Slots[slotId] = customization;
             }
         }
 
@@ -62,7 +62,7 @@ public static class Customizations
                     try
                     {
                         string json = JsonConvert.SerializeObject(
-                            new SaveRequestData() { data = SaveList.ToArray() },
+                            new SaveRequestData() { Data = SaveList.ToArray() },
                             Formatting.None,
                             new JsonSerializerSettings
                             {
@@ -93,7 +93,7 @@ public static class Customizations
             foreach (var (id, customizedObject) in allCustomizations)
             {
                 var customizations = Database[id] = [];
-                foreach (var (slotId, customization) in customizedObject.slots)
+                foreach (var (slotId, customization) in customizedObject.Slots)
                 {
                     customizations[slotId] = customization;
                 }
@@ -108,15 +108,23 @@ public static class Customizations
 
     private struct SaveRequestData
     {
-        public CustomizedObject[] data;
+        [JsonProperty("data")]
+        public CustomizedObject[] Data;
     }
 
     private struct CustomizedObject
     {
-        public string id;
-        public CustomizationType type;
-        public string name;
-        public Dictionary<string, CustomizationJson> slots;
+        [JsonProperty("id")]
+        public string Id;
+
+        [JsonProperty("type")]
+        public CustomizationType Type;
+
+        [JsonProperty("name")]
+        public string Name;
+
+        [JsonProperty("slots")]
+        public Dictionary<string, CustomizationJson> Slots;
     }
 
     private enum CustomizationType

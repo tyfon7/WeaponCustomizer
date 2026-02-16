@@ -14,62 +14,62 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
     private const float SIDE_MOVE_DISTANCE = 0.2f;
     private const float STEP_INTERVAL = 0.002f;
 
-    private Image boneIcon;
-    private Transform mod;
-    private CustomizedMod customizedMod;
-    private Weapon weapon;
-    private Slot slot;
-    private CameraViewporter viewporter;
-    private Transform rotator;
-    private Action<bool> onChange;
+    private Image _boneIcon;
+    private Transform _mod;
+    private CustomizedMod _customizedMod;
+    private Weapon _weapon;
+    private Slot _slot;
+    private CameraViewporter _viewporter;
+    private Transform _rotator;
+    private Action<bool> _onChange;
 
-    private Vector3 midLocalPosition;
-    private Vector3 minLocalPosition;
-    private Vector3 maxLocalPosition;
-    private Vector2 minScreen;
-    private Vector2 maxScreen;
-    private Vector2 startScreen;
-    private Plane movementPlane;
-    private Vector3 rotationAxis;
-    private Quaternion rotationStart;
+    private Vector3 _midLocalPosition;
+    private Vector3 _minLocalPosition;
+    private Vector3 _maxLocalPosition;
+    private Vector2 _minScreen;
+    private Vector2 _maxScreen;
+    private Vector2 _startScreen;
+    private Plane _movementPlane;
+    private Vector3 _rotationAxis;
+    private Quaternion _rotationStart;
 
-    private bool dragging;
-    private bool hovered;
-    private bool rotating;
+    private bool _dragging;
+    private bool _hovered;
+    private bool _rotating;
 
     public void Init(Image boneIcon, Transform mod, Weapon weapon, Slot slot, CameraViewporter viewporter, Action<bool> onChange)
     {
-        this.boneIcon = boneIcon;
-        this.mod = mod;
-        this.weapon = weapon;
-        this.slot = slot;
-        this.viewporter = viewporter;
-        this.onChange = onChange;
+        this._boneIcon = boneIcon;
+        this._mod = mod;
+        this._weapon = weapon;
+        this._slot = slot;
+        this._viewporter = viewporter;
+        this._onChange = onChange;
 
-        rotator = mod.root.Find("Rotator");
+        _rotator = mod.root.Find("Rotator");
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        hovered = true;
+        _hovered = true;
         SetColor();
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        hovered = false;
+        _hovered = false;
         SetColor();
     }
 
     private void SetColor()
     {
-        if (mod.childCount > 0 && (hovered || dragging))
+        if (_mod.childCount > 0 && (_hovered || _dragging))
         {
-            boneIcon.color = Color.cyan;
+            _boneIcon.color = Color.cyan;
         }
         else
         {
-            boneIcon.color = Color.white;
+            _boneIcon.color = Color.white;
         }
     }
 
@@ -83,143 +83,143 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
 
     public void Reset()
     {
-        var customizedMod = mod.GetComponent<CustomizedMod>();
+        var customizedMod = _mod.GetComponent<CustomizedMod>();
         if (customizedMod != null)
         {
             customizedMod.Reset();
             Destroy(customizedMod);
             customizedMod = null;
 
-            weapon.ResetCustomization(slot);
-            onChange(true);
+            _weapon.ResetCustomization(_slot);
+            _onChange(true);
         }
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
-        if (eventData.button != PointerEventData.InputButton.Left || mod.childCount <= 0)
+        if (eventData.button != PointerEventData.InputButton.Left || _mod.childCount <= 0)
         {
             // Cancel drag
             eventData.pointerDrag = null;
             return;
         }
 
-        dragging = true;
+        _dragging = true;
         SetColor();
 
-        startScreen = eventData.position;
+        _startScreen = eventData.position;
 
-        customizedMod = mod.GetComponent<CustomizedMod>();
-        if (customizedMod == null)
+        _customizedMod = _mod.GetComponent<CustomizedMod>();
+        if (_customizedMod == null)
         {
-            customizedMod = mod.gameObject.AddComponent<CustomizedMod>();
-            customizedMod.Init();
+            _customizedMod = _mod.gameObject.AddComponent<CustomizedMod>();
+            _customizedMod.Init();
         }
 
-        var originalLocalPosition = customizedMod.OriginalPosition;
+        var originalLocalPosition = _customizedMod.OriginalPosition;
 
         bool shiftDown = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
         bool ctrlDown = Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
         bool altDown = Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt);
 
-        Vector3 upDirection = mod.parent.InverseTransformDirection(rotator.up);
-        Vector3 forwardDirection = mod.parent.InverseTransformDirection(rotator.forward);
-        Vector3 rightDirection = mod.parent.InverseTransformDirection(rotator.right);
+        Vector3 upDirection = _mod.parent.InverseTransformDirection(_rotator.up);
+        Vector3 forwardDirection = _mod.parent.InverseTransformDirection(_rotator.forward);
+        Vector3 rightDirection = _mod.parent.InverseTransformDirection(_rotator.right);
 
         float distance; // Max distance the mod is movable
         Vector3 direction; // What direction it's moving in
         Vector3 otherOffset; // How the mod has been moved on the *other* two axis
 
-        var offset = mod.localPosition - originalLocalPosition;
+        var offset = _mod.localPosition - originalLocalPosition;
         if (shiftDown)
         {
             direction = upDirection;
             distance = UP_DOWN_MOVE_DISTANCE;
             otherOffset = Vector3.Project(offset, forwardDirection) + Vector3.Project(offset, rightDirection);
-            movementPlane = new Plane(rotator.forward, mod.position);
+            _movementPlane = new Plane(_rotator.forward, _mod.position);
         }
         else if (ctrlDown)
         {
             direction = forwardDirection;
             distance = SIDE_MOVE_DISTANCE;
             otherOffset = Vector3.Project(offset, upDirection) + Vector3.Project(offset, rightDirection);
-            movementPlane = new Plane(rotator.right, mod.position);
+            _movementPlane = new Plane(_rotator.right, _mod.position);
         }
         else
         {
             direction = rightDirection;
             distance = LEFT_RIGHT_MOVE_DISTANCE;
             otherOffset = Vector3.Project(offset, forwardDirection) + Vector3.Project(offset, upDirection);
-            movementPlane = new Plane(rotator.forward, mod.position);
+            _movementPlane = new Plane(_rotator.forward, _mod.position);
         }
 
         if (altDown)
         {
-            rotating = true;
-            rotationAxis = mod.parent.localRotation * direction;
-            rotationStart = mod.localRotation;
-            minScreen = new(0, eventData.position.y);
-            maxScreen = new(Screen.width, eventData.position.y);
+            _rotating = true;
+            _rotationAxis = _mod.parent.localRotation * direction;
+            _rotationStart = _mod.localRotation;
+            _minScreen = new(0, eventData.position.y);
+            _maxScreen = new(Screen.width, eventData.position.y);
             return;
         }
 
-        midLocalPosition = originalLocalPosition + otherOffset;
-        minLocalPosition = midLocalPosition - (distance * direction);
-        maxLocalPosition = midLocalPosition + (distance * direction);
+        _midLocalPosition = originalLocalPosition + otherOffset;
+        _minLocalPosition = _midLocalPosition - (distance * direction);
+        _maxLocalPosition = _midLocalPosition + (distance * direction);
 
-        Vector3 minPosition = mod.parent.TransformPoint(minLocalPosition);
-        Vector3 maxPosition = mod.parent.TransformPoint(maxLocalPosition);
+        Vector3 minPosition = _mod.parent.TransformPoint(_minLocalPosition);
+        Vector3 maxPosition = _mod.parent.TransformPoint(_maxLocalPosition);
 
-        minScreen = viewporter.TargetCamera.WorldToScreenPoint(minPosition);
-        maxScreen = viewporter.TargetCamera.WorldToScreenPoint(maxPosition);
+        _minScreen = _viewporter.TargetCamera.WorldToScreenPoint(minPosition);
+        _maxScreen = _viewporter.TargetCamera.WorldToScreenPoint(maxPosition);
     }
 
     public void OnDrag(PointerEventData eventData)
     {
-        if (rotating)
+        if (_rotating)
         {
             OnRotate(eventData);
             return;
         }
 
-        Vector2 mouseVector = eventData.position - minScreen;
-        Vector2 allowedVector = maxScreen - minScreen;
+        Vector2 mouseVector = eventData.position - _minScreen;
+        Vector2 allowedVector = _maxScreen - _minScreen;
 
         // This gets the amount of a vector A (the mouse position vector) that applies to vector B (the allowed positions of the mod)
         // Which is to say, helps find the point where A projects onto B, aka the closest point on B from the tip of A
         float projectedMagnitude = Vector2.Dot(mouseVector, allowedVector) / allowedVector.magnitude;
         projectedMagnitude = Mathf.Clamp(projectedMagnitude, 0, allowedVector.magnitude);
 
-        Vector2 screenPosition = Vector2.MoveTowards(minScreen, maxScreen, projectedMagnitude);
+        Vector2 screenPosition = Vector2.MoveTowards(_minScreen, _maxScreen, projectedMagnitude);
 
         // With that perfect screen position, raycast onto the weapon plane to find the exact spot where the mod should go
-        Ray ray = viewporter.TargetCamera.ScreenPointToRay(screenPosition);
-        if (movementPlane.Raycast(ray, out float enter))
+        Ray ray = _viewporter.TargetCamera.ScreenPointToRay(screenPosition);
+        if (_movementPlane.Raycast(ray, out float enter))
         {
             Vector3 hitPoint = ray.GetPoint(enter);
-            Vector3 newLocalPosition = mod.parent.InverseTransformPoint(hitPoint);
+            Vector3 newLocalPosition = _mod.parent.InverseTransformPoint(hitPoint);
 
-            float moveDistance = (newLocalPosition - midLocalPosition).magnitude;
+            float moveDistance = (newLocalPosition - _midLocalPosition).magnitude;
             if (Settings.StepSize.Value > 0)
             {
                 float localStepSize = Settings.StepSize.Value * STEP_INTERVAL;
                 moveDistance = Mathf.RoundToInt(moveDistance / localStepSize) * localStepSize;
             }
 
-            var target = (maxLocalPosition - newLocalPosition).magnitude > (newLocalPosition - minLocalPosition).magnitude ?
-                minLocalPosition :
-                maxLocalPosition;
+            var target = (_maxLocalPosition - newLocalPosition).magnitude > (newLocalPosition - _minLocalPosition).magnitude ?
+                _minLocalPosition :
+                _maxLocalPosition;
 
-            newLocalPosition = Vector3.MoveTowards(midLocalPosition, target, moveDistance);
-            customizedMod.Move(newLocalPosition);
+            newLocalPosition = Vector3.MoveTowards(_midLocalPosition, target, moveDistance);
+            _customizedMod.Move(newLocalPosition);
         }
 
-        onChange(false);
+        _onChange(false);
     }
 
     private void OnRotate(PointerEventData eventData)
     {
-        float distance = eventData.position.x - startScreen.x;
+        float distance = eventData.position.x - _startScreen.x;
         float percent = distance / Screen.width;
         float degrees = 360 * percent;
 
@@ -228,19 +228,19 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
             degrees = Mathf.RoundToInt(degrees / Settings.RotationStepSize.Value) * Settings.RotationStepSize.Value;
         }
 
-        customizedMod.Rotate(rotationStart * Quaternion.AngleAxis(degrees, rotationAxis));
+        _customizedMod.Rotate(_rotationStart * Quaternion.AngleAxis(degrees, _rotationAxis));
 
-        onChange(false);
+        _onChange(false);
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
-        dragging = false;
-        rotating = false;
+        _dragging = false;
+        _rotating = false;
         SetColor();
 
-        weapon.SetCustomization(slot, customizedMod.Customization);
+        _weapon.SetCustomization(_slot, _customizedMod.Customization);
 
-        onChange(true);
+        _onChange(true);
     }
 }

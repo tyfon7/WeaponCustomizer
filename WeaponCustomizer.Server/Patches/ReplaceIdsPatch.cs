@@ -50,7 +50,7 @@ public class ReplaceIdsPatch : AbstractPatch
         if (dirty)
         {
             // Fire and forget
-            var task = weaponCustomizer.Save();
+            _ = weaponCustomizer.Save();
         }
     }
 }

@@ -63,14 +63,7 @@ public class DraggableBone : MonoBehaviour, IDragHandler, IBeginDragHandler, IEn
 
     private void SetColor()
     {
-        if (_mod.childCount > 0 && (_hovered || _dragging))
-        {
-            _boneIcon.color = Color.cyan;
-        }
-        else
-        {
-            _boneIcon.color = Color.white;
-        }
+        _boneIcon.color = _mod.childCount > 0 && (_hovered || _dragging) ? Color.cyan : Color.white;
     }
 
     public void OnPointerClick(PointerEventData eventData)

@@ -42,28 +42,18 @@ public class CustomizedMod : MonoBehaviour
 
     public void Move(Vector3 position)
     {
-        if ((Customization.OriginalPosition.Value - position).magnitude < MIN_POSITION_DIFFERENCE)
-        {
-            Customization = new(OriginalPosition, null, OriginalRotation, Customization.Rotation);
-        }
-        else
-        {
-            Customization = new(OriginalPosition, position, OriginalRotation, Customization.Rotation);
-        }
+        Customization = (Customization.OriginalPosition.Value - position).magnitude < MIN_POSITION_DIFFERENCE
+            ? new(OriginalPosition, null, OriginalRotation, Customization.Rotation)
+            : new(OriginalPosition, position, OriginalRotation, Customization.Rotation);
 
         transform.localPosition = position;
     }
 
     public void Rotate(Quaternion rotation)
     {
-        if (Quaternion.Angle(OriginalRotation, rotation) < MIN_ROTATION_DIFFERENCE)
-        {
-            Customization = new(OriginalPosition, Customization.Position, OriginalRotation, null);
-        }
-        else
-        {
-            Customization = new(OriginalPosition, Customization.Position, OriginalRotation, rotation);
-        }
+        Customization = Quaternion.Angle(OriginalRotation, rotation) < MIN_ROTATION_DIFFERENCE
+            ? new(OriginalPosition, Customization.Position, OriginalRotation, null)
+            : new(OriginalPosition, Customization.Position, OriginalRotation, rotation);
 
         transform.localRotation = rotation;
     }

@@ -295,8 +295,7 @@ public static class EditPatches
                 return;
             }
 
-            var preset = PresetField.GetValue(__instance) as WeaponBuildClass;
-            if (preset == null)
+            if (PresetField.GetValue(__instance) is not WeaponBuildClass preset)
             {
                 return;
             }

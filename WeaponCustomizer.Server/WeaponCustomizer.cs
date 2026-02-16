@@ -78,15 +78,11 @@ public class WeaponCustomizer(
             var json = await fileUtil.ReadFileAsync(filePath);
             var file = jsonUtil.Deserialize<FileFormat>(json);
 
-            switch (file.Version)
+            Database = file.Version switch
             {
-                case 2:
-                    Database = file.Customizations;
-                    break;
-                default:
-                    throw new Exception("Unknown file version");
-            }
-
+                2 => file.Customizations,
+                _ => throw new Exception("Unknown file version"),
+            };
             Database = file.Customizations;
         }
         catch (Exception ex)

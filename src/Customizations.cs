@@ -62,7 +62,7 @@ public static class Customizations
                     try
                     {
                         string json = JsonConvert.SerializeObject(
-                            new SaveRequestData() { Data = SaveList.ToArray() },
+                            new SaveRequestData() { Data = [.. SaveList] },
                             Formatting.None,
                             new JsonSerializerSettings
                             {

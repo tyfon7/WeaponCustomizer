@@ -235,7 +235,7 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("Assemble") != null); // GClass3259
+            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("Assemble") != null); // GClass3470
             return AccessTools.Method(type, "Assemble");
         }
 

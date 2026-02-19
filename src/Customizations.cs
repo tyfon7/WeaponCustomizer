@@ -54,7 +54,7 @@ public static class Customizations
         if (!PendingSave)
         {
             PendingSave = true;
-            ItemUiContext.Instance.WaitForEndOfFrame(() =>
+            ItemUiContext.Instance.WaitForEndOfFrame(async () =>
             {
                 PendingSave = false;
                 if (SaveList.Count > 0)
@@ -64,19 +64,21 @@ public static class Customizations
                         string json = JsonConvert.SerializeObject(
                             new SaveRequestData() { Data = [.. SaveList] },
                             Formatting.None,
-                            new JsonSerializerSettings
-                            {
-                                NullValueHandling = NullValueHandling.Ignore
-                            });
+                            new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+
+                        var response = await RequestHandler.PutJsonAsync("/weaponcustomizer/save", json);
+                        if (response != "Success")
+                        {
+                            Plugin.Instance.Logger.LogError("Failed to save. Request: " + json);
+                            NotificationManagerClass.DisplayWarningNotification("Failed to save weapon customization - check the server");
+                            return;
+                        }
 
                         SaveList.Clear();
-
-                        RequestHandler.PutJsonAsync("/weaponcustomizer/save", json);
                     }
                     catch (Exception ex)
                     {
                         Plugin.Instance.Logger.LogError("Failed to save: " + ex.ToString());
-                        NotificationManagerClass.DisplayWarningNotification("Failed to save weapon customization - check the server");
                     }
                 }
             });

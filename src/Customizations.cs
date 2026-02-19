@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using EFT.InventoryLogic;
 using EFT.UI;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Converters;
 using SPT.Common.Http;
 
 namespace WeaponCustomizer;
@@ -64,7 +65,11 @@ public static class Customizations
                         string json = JsonConvert.SerializeObject(
                             new SaveRequestData() { Data = [.. SaveList] },
                             Formatting.None,
-                            new JsonSerializerSettings { NullValueHandling = NullValueHandling.Ignore });
+                            new JsonSerializerSettings
+                            {
+                                NullValueHandling = NullValueHandling.Ignore,
+                                Converters = { new StringEnumConverter() }
+                            });
 
                         var response = await RequestHandler.PutJsonAsync("/weaponcustomizer/save", json);
                         if (response != "Success")

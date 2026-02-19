@@ -8,12 +8,12 @@ public record CustomizedObject
 {
     public enum Type
     {
+        [JsonStringEnumMemberName("unknown")]
+        Unknown,
         [JsonStringEnumMemberName("weapon")]
         Weapon,
         [JsonStringEnumMemberName("preset")]
-        Preset,
-        [JsonStringEnumMemberName("unknown")]
-        Unknown
+        Preset
     }
 
     [JsonPropertyName("id")]

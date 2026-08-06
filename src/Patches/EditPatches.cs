@@ -7,14 +7,13 @@ using Comfort.Common;
 using EFT;
 using EFT.InventoryLogic;
 using EFT.UI;
+using EFT.UI.Builds;
 using EFT.UI.Screens;
 using EFT.UI.WeaponModding;
 using HarmonyLib;
 using SPT.Reflection.Patching;
-using SPT.Reflection.Utils;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.UI;
 
 namespace WeaponCustomizer;
 
@@ -61,7 +60,7 @@ public static class EditPatches
 
     public static void Enable()
     {
-        PresetField = AccessTools.GetDeclaredFields(typeof(EditBuildScreen)).Single(f => f.FieldType == typeof(WeaponBuildClass));
+        PresetField = AccessTools.Field(typeof(EditBuildScreen), "_selectedBuild");
 
         new BoneMoverPatch().Enable();
         new RevertButtonPatch().Enable();
@@ -81,9 +80,6 @@ public static class EditPatches
 
     public class BoneMoverPatch : ModulePatch
     {
-        private static MethodInfo UpdatePositionsMethod;
-        private static FieldInfo ViewporterField;
-
         protected override MethodBase GetTargetMethod()
         {
             return AccessTools.Method(typeof(ModdingScreenSlotView), nameof(ModdingScreenSlotView.Show));
@@ -91,11 +87,11 @@ public static class EditPatches
 
         [PatchPostfix]
         public static void Postfix(
+            ModdingScreenSlotView __instance,
             Slot slot,
-            ModdingScreen moddingScreen,
+            IItemObserverScreen moddingScreen,
             CompoundItem item,
-            Transform modBone,
-            Image ____boneIcon)
+            Transform modBone)
         {
             if (item is not Weapon weapon)
             {
@@ -105,7 +101,7 @@ public static class EditPatches
             if (!Settings.MoveEverything.Value && !MovableMods.Contains(modBone.name))
             {
                 // May need to clean up if the draggable bone was already created
-                var draggableBone = ____boneIcon.GetComponent<DraggableBone>();
+                var draggableBone = __instance._boneIcon.GetComponent<DraggableBone>();
                 if (draggableBone != null)
                 {
                     draggableBone.Reset();
@@ -131,19 +127,34 @@ public static class EditPatches
                 return;
             }
 
-            UpdatePositionsMethod = AccessTools.Method(moddingScreen.GetType(), "UpdatePositions");
-            ViewporterField = AccessTools.Field(moddingScreen.GetType(), "_viewporter");
-            var viewporter = ViewporterField.GetValue(moddingScreen) as CameraViewporter;
+            Action updatePositions = null;
+            CameraViewporter viewporter = null;
+            if (moddingScreen is EditBuildScreen editBuildScreen)
+            {
+                updatePositions = editBuildScreen.UpdatePositions;
+                viewporter = editBuildScreen._viewporter;
+            }
+            else if (moddingScreen is WeaponModdingScreen weaponModdingScreen)
+            {
+                updatePositions = weaponModdingScreen.UpdatePositions;
+                viewporter = weaponModdingScreen._viewporter;
+            }
+            else
+            {
+                Plugin.Instance.Logger.LogError("Unhandled type of IItemObserverScreen: " + moddingScreen.GetType());
+                return;
+            }
 
-            ____boneIcon.GetOrAddComponent<DraggableBone>().Init(
-                ____boneIcon,
+            __instance._boneIcon.GetOrAddComponent<DraggableBone>().Init(
+                __instance._boneIcon,
                 modBone,
                 weapon,
                 slot,
                 viewporter,
                 (done) =>
                 {
-                    UpdatePositionsMethod.Invoke(moddingScreen, []);
+                    updatePositions();
+
                     if (done)
                     {
                         OnModMoved(weapon, moddingScreen);
@@ -151,7 +162,7 @@ public static class EditPatches
                 });
         }
 
-        private static void OnModMoved(Weapon weapon, ModdingScreen moddingScreen)
+        private static void OnModMoved(Weapon weapon, IItemObserverScreen moddingScreen)
         {
             EditBuildScreen editBuildScreen = moddingScreen as EditBuildScreen;
             editBuildScreen?.CheckForVitalParts(); // Triggers assemble button
@@ -165,9 +176,9 @@ public static class EditPatches
                 RevertButton.HideGameObject();
             }
 
-            if (editBuildScreen != null && !weapon.CustomizationsMatch(PresetField.GetValue(editBuildScreen) as WeaponBuildClass))
+            if (editBuildScreen != null && !weapon.CustomizationsMatch(PresetField.GetValue(editBuildScreen) as WeaponBuild))
             {
-                editBuildScreen.method_34(); // Mark build as dirty
+                editBuildScreen.AddOrRemoveFromItem(); // Mark build as dirty
             }
         }
     }
@@ -176,8 +187,9 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.DeclaredMethod(typeof(WeaponModdingScreen).BaseType, nameof(WeaponModdingScreen.UpdateItem));
+            return AccessTools.DeclaredMethod(typeof(WeaponModdingScreen).BaseType, nameof(WeaponModdingScreen.UpdateItem)); // ItemObserveScreen<TController, TScreen>
         }
+
 
         [PatchPostfix]
         public static void Postfix(MonoBehaviour __instance, Item newItem, DefaultUIButton ____backButton)
@@ -235,8 +247,7 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("Assemble") != null); // GClass3470
-            return AccessTools.Method(type, "Assemble");
+            return AccessTools.Method(typeof(WeaponAssembler), nameof(WeaponAssembler.Assemble));
         }
 
         // itemBody is the real weapon, buildWeapon is the temporary preset being applied to the itemBody
@@ -256,8 +267,7 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("CheckIfAlreadyBuilt") != null); // GClass3259
-            return AccessTools.Method(type, "CheckIfAlreadyBuilt");
+            return AccessTools.Method(typeof(WeaponAssembler), nameof(WeaponAssembler.CheckIfAlreadyBuilt));
         }
 
         [PatchPostfix]
@@ -295,7 +305,7 @@ public static class EditPatches
                 return;
             }
 
-            if (PresetField.GetValue(__instance) is not WeaponBuildClass preset)
+            if (PresetField.GetValue(__instance) is not WeaponBuild preset)
             {
                 return;
             }
@@ -310,11 +320,11 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(WeaponBuildsStorageClass), nameof(WeaponBuildsStorageClass.FindBuild));
+            return AccessTools.Method(typeof(WeaponBuildsStorage), nameof(WeaponBuildsStorage.FindBuild));
         }
 
         [PatchPostfix]
-        public static void Postfix(Item item, ref WeaponBuildClass __result)
+        public static void Postfix(Item item, ref WeaponBuild __result)
         {
             if (__result == null || item is not Weapon weapon)
             {
@@ -335,11 +345,11 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(WeaponBuildsStorageClass), nameof(WeaponBuildsStorageClass.SaveBuild));
+            return AccessTools.Method(typeof(WeaponBuildsStorage), nameof(WeaponBuildsStorage.SaveBuild));
         }
 
         [PatchPostfix]
-        public static void Postfix(WeaponBuildClass build)
+        public static void Postfix(WeaponBuild build)
         {
             if (build.Item is not Weapon weapon)
             {
@@ -354,17 +364,17 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(WeaponBuildsStorageClass), nameof(WeaponBuildsStorageClass.RemoveBuild));
+            return AccessTools.Method(typeof(WeaponBuildsStorage), nameof(WeaponBuildsStorage.RemoveBuild));
         }
 
         [PatchPrefix]
-        public static void Prefix(WeaponBuildsStorageClass __instance, MongoID buildId, ref WeaponBuildClass __state)
+        public static void Prefix(WeaponBuildsStorage __instance, MongoID buildId, ref WeaponBuild __state)
         {
-            __instance.Dictionary_0.TryGetValue(buildId, out __state);
+            __instance._weaponBuilds.TryGetValue(buildId, out __state);
         }
 
         [PatchPostfix]
-        public static async void Postfix(Task<IResult> __result, WeaponBuildClass __state)
+        public static async void Postfix(Task<IResult> __result, WeaponBuild __state)
         {
             if (__state != null && (await __result).Succeed)
             {
@@ -377,13 +387,13 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(ContextInteractionSwitcherClass), nameof(ContextInteractionSwitcherClass.IsActive));
+            return AccessTools.Method(typeof(ItemContextInteractionsSwitcher), nameof(ItemContextInteractionsSwitcher.IsActive));
         }
 
         [PatchPostfix]
-        public static void Postfix(ContextInteractionSwitcherClass __instance, EItemInfoButton button, ref bool __result)
+        public static void Postfix(ItemContextInteractionsSwitcher __instance, EItemInfoButton button, ref bool __result)
         {
-            if (__instance.Item_0_1 is not Weapon || Settings.ModifyRaidWeapons.Value == ModRaidWeapon.Never)
+            if (__instance._item is not Weapon || Settings.ModifyRaidWeapons.Value == ModRaidWeapon.Never)
             {
                 return;
             }
@@ -399,15 +409,15 @@ public static class EditPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(ContextInteractionSwitcherClass), nameof(ContextInteractionSwitcherClass.IsInteractive));
+            return AccessTools.Method(typeof(ItemContextInteractionsSwitcher), nameof(ItemContextInteractionsSwitcher.IsInteractive));
         }
 
         [PatchPostfix]
-        public static void Postfix(ContextInteractionSwitcherClass __instance, EItemInfoButton button, ref IResult __result)
+        public static void Postfix(ItemContextInteractionsSwitcher __instance, EItemInfoButton button, ref IResult __result)
         {
-            if (button == EItemInfoButton.Modding && Plugin.InRaid() && __instance.TraderControllerClass is InventoryController inventoryController)
+            if (button == EItemInfoButton.Modding && Plugin.InRaid() && __instance._itemController is InventoryController inventoryController)
             {
-                if (inventoryController.ID == __instance.Item_0_1.Owner.ID && inventoryController.IsItemEquipped(__instance.Item_0_1))
+                if (inventoryController.ID == __instance._item.Owner.ID && inventoryController.IsItemEquipped(__instance._item))
                 {
                     __result = new FailedResult("You can't edit equipped weapon");
                     return;
@@ -432,9 +442,9 @@ public static class EditPatches
         }
 
         [PatchPrefix]
-        public static bool Prefix(ItemUiContext __instance, Item item, InventoryController ___inventoryController_0)
+        public static bool Prefix(ItemUiContext __instance, Item item, InventoryController ____inventoryController)
         {
-            new WeaponModdingScreen.GClass3922(item, ___inventoryController_0, __instance.CompoundItem_0).ShowScreen(EScreenState.Queued);
+            new WeaponModdingScreen.WeaponModdingScreenController(item, ____inventoryController, __instance.PlayerCollections).ShowScreen(EScreenState.Queued);
             return false;
         }
     }
@@ -447,15 +457,15 @@ public static class EditPatches
         }
 
         [PatchPostfix]
-        public static void Postfix(ModdingScreenSlotView __instance, LineRenderer ____lineRenderer, Transform ____tooltipHoverArea)
+        public static void Postfix(ModdingScreenSlotView __instance)
         {
             if (!Plugin.InRaid())
             {
                 return;
             }
 
-            ____lineRenderer.gameObject.SetActive(false);
-            ____tooltipHoverArea.gameObject.SetActive(false);
+            __instance._lineRenderer.gameObject.SetActive(false);
+            __instance._tooltipHoverArea.gameObject.SetActive(false);
         }
     }
 }

@@ -1,16 +1,17 @@
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+using Spectre.Console;
+using SPTarkov.Common.Models.Logging;
 using SPTarkov.DI.Annotations;
 using SPTarkov.Server.Core.DI;
-using SPTarkov.Server.Core.Models.Logging;
-using SPTarkov.Server.Core.Models.Utils;
 
 namespace WeaponCustomizer.Server;
 
-[Injectable(TypePriority = OnLoadOrder.PostSptModLoader)]
+[Injectable(TypePriority = OnLoadOrder.PostLoad)]
 public class PostSptLoad(ISptLogger<PostSptLoad> logger, WeaponCustomizer weaponCustomizer) : IOnLoad
 {
-    public async Task OnLoad()
+    public async Task OnLoadAsync(CancellationToken cancellationToken)
     {
         await weaponCustomizer.Clean();
 
@@ -18,7 +19,7 @@ public class PostSptLoad(ISptLogger<PostSptLoad> logger, WeaponCustomizer weapon
         {
             var customizedWeapons = weaponCustomizer.Database.Values.Where(c => c.CustomizedType == CustomizedObject.Type.Weapon);
             var customizedPresets = weaponCustomizer.Database.Values.Where(c => c.CustomizedType == CustomizedObject.Type.Preset);
-            logger.LogWithColor($"WeaponCustomizer loaded {customizedWeapons.Count()} customized weapons and {customizedPresets.Count()} customized presets", LogTextColor.Cyan);
+            logger.LogWithColor($"WeaponCustomizer loaded {customizedWeapons.Count()} customized weapons and {customizedPresets.Count()} customized presets", Color.Cyan);
         }
     }
 }

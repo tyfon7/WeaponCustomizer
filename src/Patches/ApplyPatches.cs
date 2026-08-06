@@ -1,13 +1,10 @@
-using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using EFT;
 using EFT.InventoryLogic;
 using HarmonyLib;
 using SPT.Reflection.Patching;
-using SPT.Reflection.Utils;
 using UnityEngine;
 
 namespace WeaponCustomizer;
@@ -25,16 +22,13 @@ public static class ApplyPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            Type ccvType = AccessTools.Field(typeof(Player.FirearmController), nameof(Player.FirearmController.CCV)).FieldType; // GClass746
-            Type type = AccessTools.Field(ccvType, nameof(Player.FirearmController.CCV.ContainerBones)).FieldType.GenericTypeArguments[1]; // GClass746.GClass747
-
-            return AccessTools.Method(type, "InsertItem");
+            return AccessTools.Method(typeof(ContainerCollectionView.SlotView), nameof(ContainerCollectionView.SlotView.InsertItem));
         }
 
         [PatchPostfix]
-        public static void Postfix(Item item, Transform ___Bone)
+        public static void Postfix(ContainerCollectionView.SlotView __instance, Item item)
         {
-            if (item == null || ___Bone == null)
+            if (item == null || __instance.Bone == null)
             {
                 return;
             }
@@ -46,12 +40,12 @@ public static class ApplyPatches
 
             if (weapon.IsCustomized(parentSlot, out Customization customization))
             {
-                ___Bone.gameObject.GetOrAddComponent<CustomizedMod>().Init(customization);
+                __instance.Bone.gameObject.GetOrAddComponent<CustomizedMod>().Init(customization);
             }
             else
             {
                 // This bone is NOT customized, but was re-used from a pool. Remove the customization
-                var customizedMod = ___Bone.gameObject.GetComponent<CustomizedMod>();
+                var customizedMod = __instance.Bone.gameObject.GetComponent<CustomizedMod>();
                 if (customizedMod != null)
                 {
                     UnityEngine.Object.DestroyImmediate(customizedMod);
@@ -66,7 +60,7 @@ public static class ApplyPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(PoolManagerClass), nameof(PoolManagerClass.CreateItemAsync));
+            return AccessTools.Method(typeof(ObjectsFactory), nameof(ObjectsFactory.CreateItemAsync));
         }
 
         [PatchPostfix]
@@ -93,8 +87,7 @@ public static class ApplyPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            Type type = PatchConstants.EftTypes.Single(t => t.GetMethod("GetItemHash") != null); // GClass928
-            return AccessTools.Method(type, "GetItemHash");
+            return AccessTools.Method(typeof(IconsHash), nameof(IconsHash.GetItemHash));
         }
 
         [PatchPostfix]

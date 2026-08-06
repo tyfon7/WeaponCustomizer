@@ -2,8 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.Serialization;
 using System.Threading.Tasks;
+using EFT;
+using EFT.Communications;
 using EFT.InventoryLogic;
 using EFT.UI;
+using EFT.UI.Builds;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using SPT.Common.Http;
@@ -21,7 +24,7 @@ public static class Customizations
         Save(weapon.Id, CustomizationType.Weapon, weapon.ShortName.Localized(), slots);
     }
 
-    public static void Save(WeaponBuildClass preset, Dictionary<string, Customization> slots)
+    public static void Save(WeaponBuild preset, Dictionary<string, Customization> slots)
     {
         Save(preset.Id, CustomizationType.Preset, preset.HandbookName, slots);
     }
@@ -75,7 +78,7 @@ public static class Customizations
                         if (response != "Success")
                         {
                             Plugin.Instance.Logger.LogError("Failed to save. Request: " + json);
-                            NotificationManagerClass.DisplayWarningNotification("Failed to save weapon customization - check the server");
+                            NotificationManager.DisplayWarningNotification("Failed to save weapon customization - check the server");
                             return;
                         }
 
@@ -109,7 +112,7 @@ public static class Customizations
         catch (Exception ex)
         {
             Plugin.Instance.Logger.LogError("Failed to load: " + ex.ToString());
-            NotificationManagerClass.DisplayWarningNotification("Failed to load Weapon Customizations - check the server");
+            NotificationManager.DisplayWarningNotification("Failed to load Weapon Customizations - check the server");
         }
     }
 

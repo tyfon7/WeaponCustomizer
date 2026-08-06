@@ -1,7 +1,6 @@
-using System;
-using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
+using ChatShared;
 using Comfort.Common;
 using EFT;
 using HarmonyLib;
@@ -23,11 +22,7 @@ public static class LoadPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            Type type = PatchConstants.EftTypes.Single(
-                t => !t.IsAbstract &&
-                typeof(ProfileEndpointFactoryAbstractClass).IsAssignableFrom(t) &&
-                t.GetMethod("RequestBuilds") != null);
-            return AccessTools.Method(type, "RequestBuilds");
+            return AccessTools.Method(typeof(EftClientBackendSession), nameof(EftClientBackendSession.RequestBuilds));
         }
 
         [PatchPostfix]
@@ -63,13 +58,13 @@ public static class LoadPatches
     {
         protected override MethodBase GetTargetMethod()
         {
-            return AccessTools.Method(typeof(SocialNetworkClass), nameof(SocialNetworkClass.method_7));
+            return AccessTools.Method(typeof(SocialNetwork), nameof(SocialNetwork.DisplayMessage), [typeof(DialogueChatMessage), typeof(string)]);
         }
 
         [PatchPostfix]
-        public static void Postfix(ChatMessageClass message)
+        public static void Postfix(DialogueChatMessage message)
         {
-            if (message.HasRewards && message.Type == ChatShared.EMessageType.InsuranceReturn)
+            if (message.HasRewards && message.Type == EMessageType.InsuranceReturn)
             {
                 Customizations.Load().HandleExceptions();
             }

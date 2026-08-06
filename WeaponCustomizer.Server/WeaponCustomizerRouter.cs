@@ -12,11 +12,11 @@ public class WeaponCustomizerRouter(JsonUtil jsonUtil, WeaponCustomizer weaponCu
         [
             new RouteAction<SaveRequestData>(
                 "/weaponcustomizer/save",
-                async (url, info, sessionId, output) => await weaponCustomizer.SaveCustomizations(info)
+                async (url, info, sessionId, output, cancellationToken) => await weaponCustomizer.SaveCustomizations(info)
             ),
             new RouteAction(
                 "/weaponcustomizer/load",
-                async (url, info, sessionId, output) => await new ValueTask<string>(jsonUtil.Serialize(weaponCustomizer.Database))
+                async (url, info, sessionId, output, cancellationToken) => await new ValueTask<string>(jsonUtil.Serialize(weaponCustomizer.Database))
             )
         ]
     )

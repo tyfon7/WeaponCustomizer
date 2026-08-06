@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using EFT.InventoryLogic;
+using EFT.UI.Builds;
 using SPT.Reflection.Utils;
 
 namespace WeaponCustomizer;
@@ -23,7 +24,7 @@ public static class HelperExtensions
         return false;
     }
 
-    public static bool IsCustomized(this WeaponBuildClass preset, out Dictionary<string, Customization> slots)
+    public static bool IsCustomized(this WeaponBuild preset, out Dictionary<string, Customization> slots)
     {
         if (Customizations.Database.TryGetValue(preset.Id, out slots))
         {
@@ -46,7 +47,7 @@ public static class HelperExtensions
         return false;
     }
 
-    public static bool IsCustomized(this WeaponBuildClass preset, Slot slot, out Customization customPosition)
+    public static bool IsCustomized(this WeaponBuild preset, Slot slot, out Customization customPosition)
     {
         string slotId = GetFullSlotId(slot);
         if (Customizations.Database.TryGetValue(preset.Id, out var slots) &&
@@ -172,7 +173,7 @@ public static class HelperExtensions
         }
     }
 
-    public static void ApplyCustomizations(this WeaponBuildClass preset, Weapon to)
+    public static void ApplyCustomizations(this WeaponBuild preset, Weapon to)
     {
         Customizations.Database.Remove(to.Id);
         if (Customizations.Database.TryGetValue(preset.Id, out var slots))
@@ -188,7 +189,7 @@ public static class HelperExtensions
         }
     }
 
-    public static void SaveAsPreset(this Weapon weapon, WeaponBuildClass preset)
+    public static void SaveAsPreset(this Weapon weapon, WeaponBuild preset)
     {
         Customizations.Database.Remove(preset.Id);
         if (Customizations.Database.TryGetValue(weapon.Id, out var slots))
@@ -200,7 +201,7 @@ public static class HelperExtensions
         Customizations.Save(preset, slots);
     }
 
-    public static void RemoveCustomizations(this WeaponBuildClass preset)
+    public static void RemoveCustomizations(this WeaponBuild preset)
     {
         if (Customizations.Database.Remove(preset.Id))
         {
@@ -231,7 +232,7 @@ public static class HelperExtensions
         return customizations.Count == otherCustomizations.Count && !customizations.Except(otherCustomizations).Any();
     }
 
-    public static bool CustomizationsMatch(this Weapon weapon, WeaponBuildClass preset)
+    public static bool CustomizationsMatch(this Weapon weapon, WeaponBuild preset)
     {
         if (weapon == null || preset == null)
         {
@@ -268,7 +269,7 @@ public static class HelperExtensions
                 break;
             }
 
-            if (item.CurrentAddress is not SlotAddress slotAddress)
+            if (item.CurrentAddress is not SlotItemAddress slotAddress)
             {
                 // wtf??
                 Plugin.Instance.Logger.LogError("Slot item hierarchy doesn't have a slot address!??");

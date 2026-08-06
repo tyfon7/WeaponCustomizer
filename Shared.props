@@ -1,7 +1,7 @@
 <Project>
   <PropertyGroup>
-    <Version>3.0.3</Version>
-    <SPTPath>$(MSBuildThisFileDirectory)..\..\..\..\SPT\4.0</SPTPath>
+    <Version>4.0.0</Version>
+    <SPTPath>$(MSBuildThisFileDirectory)..\..\..\..\SPT\4.1</SPTPath>
     <AssemblySearchPaths>
       $(SPTPath)\EscapeFromTarkov_Data\Managed;
       $(SPTPath)\BepInEx\plugins\spt;
@@ -38,10 +38,10 @@
   <Target Name="SPTServerDeploy" AfterTargets="PostBuildEvent" Condition="'$(SPTModType)'=='Server'">
     <Exec
       Command='
-        xcopy /F /Y "$(TargetPath)" "%(DeployTarget.Path)\SPT\user\mods\$(TargetName)\"
+        xcopy /F /Y "$(TargetPath)" "%(DeployTarget.Path)\SPT_Runtime\user\mods\$(TargetName)\"
 
         if $(ConfigurationName) == Debug (
-          xcopy /F /Y "$(ProjectDir)$(OutDir)$(TargetName).pdb" "%(DeployTarget.Path)\SPT\user\mods\$(TargetName)\"
+          xcopy /F /Y "$(ProjectDir)$(OutDir)$(TargetName).pdb" "%(DeployTarget.Path)\SPT_Runtime\user\mods\$(TargetName)\"
         )'
     />
   </Target>
